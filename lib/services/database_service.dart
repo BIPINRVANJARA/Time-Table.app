@@ -46,13 +46,9 @@ class DatabaseService {
         .where((subject) => subject.dayOfWeek == dayOfWeek)
         .toList();
     
-    // Sort by start time (hour first, then minute)
-    subjects.sort((a, b) {
-      if (a.startHour != b.startHour) {
-        return a.startHour.compareTo(b.startHour);
-      }
-      return a.startMinute.compareTo(b.startMinute);
-    });
+    // Sort by start time using minutes since midnight
+    // This is the ONLY correct way to sort times
+    subjects.sort((a, b) => a.startInMinutes.compareTo(b.startInMinutes));
     
     return subjects;
   }

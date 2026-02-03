@@ -6,6 +6,7 @@ import '../utils/theme.dart';
 import '../widgets/subject_card.dart';
 import 'weekly_setup_screen.dart';
 import 'add_edit_subject_screen.dart';
+import 'notification_debug_screen.dart';
 
 class TodayScheduleScreen extends StatefulWidget {
   const TodayScheduleScreen({super.key});
@@ -46,6 +47,17 @@ class _TodayScheduleScreenState extends State<TodayScheduleScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.bug_report),
+            tooltip: 'Debug Notifications',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const NotificationDebugScreen(),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.edit_calendar),
             onPressed: () {

@@ -81,4 +81,15 @@ class Subject extends HiveObject {
     const days = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     return days[dayOfWeek];
   }
+
+  // Get start time as minutes since midnight (for sorting)
+  // This is the CANONICAL time representation
+  int get startInMinutes {
+    return (startHour * 60) + startMinute;
+  }
+
+  // Get end time as minutes since midnight
+  int get endInMinutes {
+    return (endHour * 60) + endMinute;
+  }
 }

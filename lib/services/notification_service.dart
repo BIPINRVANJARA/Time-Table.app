@@ -19,6 +19,11 @@ class NotificationService {
 
     // Initialize timezone database
     tz.initializeTimeZones();
+    
+    // Set local timezone to India (Asia/Kolkata)
+    // This is CRITICAL for notifications to work correctly
+    final location = tz.getLocation('Asia/Kolkata');
+    tz.setLocalLocation(location);
 
     // Android initialization settings
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -106,10 +111,17 @@ class NotificationService {
       iOS: iosDetails,
     );
 
+    // Format the start time for notification
+    String formatTime(int hour, int minute) {
+      final period = hour >= 12 ? 'PM' : 'AM';
+      final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+      return '$displayHour:${minute.toString().padLeft(2, '0')} $period';
+    }
+
     await _notifications.zonedSchedule(
       notificationId,
-      subject.subjectName,
-      'Class starts in ${subject.reminderMinutesBefore} minutes',
+      'Next Lecture: ${subject.subjectName}',
+      'Starts at ${formatTime(subject.startHour, subject.startMinute)} (in ${subject.reminderMinutesBefore} minutes)',
       notificationTime,
       notificationDetails,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -187,5 +199,25 @@ class NotificationService {
   // Get pending notifications (for debugging)
   Future<List<PendingNotificationRequest>> getPendingNotifications() async {
     return await _notifications.pendingNotificationRequests();
+  }
+
+  // Test notification (fires immediately)
+  Future<void> testNotification() async {
+    const androidDetails = AndroidNotificationDetails(
+      'test_channel',
+      'Test Notifications',
+      channelDescription: 'Test notifications for debugging',
+      importance: Importance.high,
+      priority: Priority.high,
+    );
+
+    const notificationDetails = NotificationDetails(android: androidDetails);
+
+    await _notifications.show(
+      999999,
+      'Test Notification',
+      'If you see this, notifications are working! 🎉',
+      notificationDetails,
+    );
   }
 }
