@@ -1,28 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Timecloud Splash Screen -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Gradient Background -->
-    <item>
-        <shape android:shape="rectangle">
-            <gradient
-                android:angle="90"
-                android:endColor="#FFFFFF"
-                android:startColor="#8EC5FC"
-                android:type="linear" />
-        </shape>
-    </item>
+    <!-- Solid Background Color -->
+    <item android:drawable="@android:color/white" />
     
-    <!-- App Logo in Center -->
+    <!-- App Logo in Center (with proper sizing) -->
     <item>
         <bitmap
             android:gravity="center"
-            android:src="@drawable/splash_logo" />
-    </item>
-    
-    <!-- Developer Credit at Bottom -->
-    <item android:bottom="48dp">
-        <bitmap
-            android:gravity="bottom|center_horizontal"
-            android:src="@drawable/dev_credit" />
+            android:src="@mipmap/ic_launcher" />
     </item>
 </layer-list>
