@@ -3,10 +3,10 @@
     <!-- White background -->
     <item android:drawable="@android:color/white" />
     
-    <!-- App logo in center (smaller size) -->
+    <!-- App logo in center (smaller size - 80dp) -->
     <item
-        android:width="120dp"
-        android:height="120dp"
+        android:width="80dp"
+        android:height="80dp"
         android:gravity="center">
         <bitmap
             android:gravity="center"
