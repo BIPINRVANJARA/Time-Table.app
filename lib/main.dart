@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 import 'services/database_service.dart';
 import 'services/notification_service.dart';
 import 'utils/theme.dart';
-import 'screens/splash_screen.dart';
 import 'screens/today_schedule_screen.dart';
+import 'screens/weekly_setup_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,7 +30,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Timecloud',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
+      theme: AppTheme.lightTheme.copyWith(
+        scaffoldBackgroundColor: Colors.white,
+      ),
       home: _getInitialScreen(),
     );
   }
@@ -38,6 +40,6 @@ class MyApp extends StatelessWidget {
   // Determine initial screen based on whether user has set up timetable
   Widget _getInitialScreen() {
     final hasSubjects = DatabaseService.hasSubjects();
-    return hasSubjects ? const TodayScheduleScreen() : const SplashScreen();
+    return hasSubjects ? const TodayScheduleScreen() : const WeeklySetupScreen();
   }
 }
