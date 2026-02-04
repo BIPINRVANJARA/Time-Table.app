@@ -3,11 +3,12 @@
     <!-- White background -->
     <item android:drawable="@android:color/white" />
     
-    <!-- App logo in center (smaller size - 80dp) -->
+    <!-- App logo in center with padding to make it appear smaller -->
     <item
-        android:width="80dp"
-        android:height="80dp"
-        android:gravity="center">
+        android:left="140dp"
+        android:right="140dp"
+        android:top="400dp"
+        android:bottom="400dp">
         <bitmap
             android:gravity="center"
             android:src="@drawable/splash_icon" />
