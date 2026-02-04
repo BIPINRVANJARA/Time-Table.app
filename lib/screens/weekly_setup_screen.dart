@@ -125,13 +125,17 @@ class _WeeklySetupScreenState extends State<WeeklySetupScreen>
 
         return ListView.builder(
           padding: const EdgeInsets.all(16),
+          physics: const BouncingScrollPhysics(),
           itemCount: subjects.length,
           itemBuilder: (context, index) {
             final subject = subjects[index];
-            return SubjectCard(
-              subject: subject,
-              onTap: () => _editSubject(subject),
-              onDelete: () => _deleteSubject(subject),
+            return RepaintBoundary(
+              child: SubjectCard(
+                key: ValueKey(subject.id),
+                subject: subject,
+                onTap: () => _editSubject(subject),
+                onDelete: () => _deleteSubject(subject),
+              ),
             );
           },
         );

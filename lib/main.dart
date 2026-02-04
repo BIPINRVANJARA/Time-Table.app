@@ -28,7 +28,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Timecloud',
+      title: 'Timestunner',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme.copyWith(
         scaffoldBackgroundColor: Colors.white,
