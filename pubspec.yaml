@@ -38,9 +38,15 @@ dependencies:
   # State management
   provider: ^6.1.2
 
-  # Local database
+  # Local database (will be replaced by Firestore)
   hive: ^2.2.3
   hive_flutter: ^1.1.0
+
+  # Firebase
+  firebase_core: ^3.8.1
+  firebase_auth: ^5.3.3
+  cloud_firestore: ^5.5.2
+  firebase_messaging: ^15.1.5
 
   # Notifications
   flutter_local_notifications: ^17.2.4

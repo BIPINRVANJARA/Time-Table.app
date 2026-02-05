@@ -46,3 +46,14 @@ app.*.map.json
 # APK files (we'll add manually for releases)
 # *.apk
 # *.aab
+
+# Firebase Configuration Files
+google-services.json
+GoogleService-Info.plist
+firebase_options.dart
+.env
+.env.local
+.env.production
+.firebase/
+firebase-debug.log
+firestore-debug.log
