@@ -185,20 +185,50 @@ class NotificationService {
     await _notifications.cancel(notificationId);
   }
 
+  // Get all pending notifications
+  Future<List<PendingNotificationRequest>> getPendingNotifications() async {
+    try {
+      final pending = await _notifications.pendingNotificationRequests();
+      return pending;
+    } catch (e) {
+      print('Error getting pending notifications: $e');
+      return [];
+    }
+  }
+
   // Cancel all notifications
   Future<void> cancelAllNotifications() async {
-    await _notifications.cancelAll();
+    try {
+      await _notifications.cancelAll();
+    } catch (e) {
+      print('Error canceling notifications: $e');
+    }
+  }
+
+  // Reschedule all subject notifications
+  Future<void> rescheduleAllNotifications() async {
+    try {
+      // Cancel all existing notifications
+      await cancelAllNotifications();
+
+      // Get all subjects with reminders enabled
+      final subjects = DatabaseService.getAllSubjects()
+          .where((subject) => subject.reminderEnabled)
+          .toList();
+
+      // Schedule notification for each subject
+      for (final subject in subjects) {
+        await scheduleSubjectNotification(subject);
+      }
+    } catch (e) {
+      print('Error rescheduling notifications: $e');
+    }
   }
 
   // Reschedule notification (useful when subject is updated)
   Future<void> rescheduleSubjectNotification(Subject subject) async {
     await cancelSubjectNotification(subject.id);
     await scheduleSubjectNotification(subject);
-  }
-
-  // Get pending notifications (for debugging)
-  Future<List<PendingNotificationRequest>> getPendingNotifications() async {
-    return await _notifications.pendingNotificationRequests();
   }
 
   // Test notification (fires immediately)
