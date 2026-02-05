@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'services/database_service.dart';
 import 'services/notification_service.dart';
 import 'utils/theme.dart';
+import 'screens/onboarding_screen.dart';
 import 'screens/today_schedule_screen.dart';
 import 'screens/weekly_setup_screen.dart';
 
@@ -37,9 +39,33 @@ class MyApp extends StatelessWidget {
     );
   }
 
-  // Determine initial screen based on whether user has set up timetable
+  // Determine initial screen based on onboarding status and timetable setup
   Widget _getInitialScreen() {
-    final hasSubjects = DatabaseService.hasSubjects();
-    return hasSubjects ? const TodayScheduleScreen() : const WeeklySetupScreen();
+    return FutureBuilder<bool>(
+      future: _checkOnboardingStatus(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+        
+        final onboardingComplete = snapshot.data ?? false;
+        
+        if (!onboardingComplete) {
+          return const OnboardingScreen();
+        }
+        
+        final hasSubjects = DatabaseService.hasSubjects();
+        return hasSubjects ? const TodayScheduleScreen() : const WeeklySetupScreen();
+      },
+    );
+  }
+  
+  Future<bool> _checkOnboardingStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('onboarding_complete') ?? false;
   }
 }
