@@ -4,6 +4,7 @@ import '../models/subject.dart';
 import '../services/database_service.dart';
 import '../utils/theme.dart';
 import '../widgets/subject_card.dart';
+import '../widgets/date_selector.dart';
 import 'weekly_setup_screen.dart';
 import 'add_edit_subject_screen.dart';
 import 'notification_debug_screen.dart';
@@ -16,32 +17,34 @@ class TodayScheduleScreen extends StatefulWidget {
 }
 
 class _TodayScheduleScreenState extends State<TodayScheduleScreen> {
-  int _selectedDayOffset = 0; // 0 = today, -1 = yesterday, +1 = tomorrow
+  DateTime _selectedDate = DateTime.now();
 
   @override
   Widget build(BuildContext context) {
-    final today = DateTime.now();
-    final selectedDate = today.add(Duration(days: _selectedDayOffset));
-    final dayOfWeek = selectedDate.weekday;
+    final dayOfWeek = _selectedDate.weekday;
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.white,
         title: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Today\'s Schedule',
+              "Today's Schedule,",
               style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
               ),
             ),
             Text(
-              DateFormat('EEEE, MMMM d').format(selectedDate),
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.normal,
+              DateFormat('MMMM, d').format(_selectedDate),
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
               ),
             ),
           ],
@@ -72,9 +75,18 @@ class _TodayScheduleScreenState extends State<TodayScheduleScreen> {
       ),
       body: Column(
         children: [
-          // Date selector
-          _buildDateSelector(today),
-          const Divider(height: 1),
+          // Horizontal date selector
+          Container(
+            color: Colors.white,
+            child: DateSelector(
+              selectedDate: _selectedDate,
+              onDateSelected: (date) {
+                setState(() {
+                  _selectedDate = date;
+                });
+              },
+            ),
+          ),
 
           // Subject list
           Expanded(
@@ -112,7 +124,7 @@ class _TodayScheduleScreenState extends State<TodayScheduleScreen> {
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => AddEditSubjectScreen(
-                dayOfWeek: selectedDate.weekday,
+                dayOfWeek: _selectedDate.weekday,
               ),
             ),
           );
@@ -122,67 +134,6 @@ class _TodayScheduleScreenState extends State<TodayScheduleScreen> {
     );
   }
 
-  Widget _buildDateSelector(DateTime today) {
-    return Container(
-      height: 80,
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: 7,
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        itemBuilder: (context, index) {
-          final offset = index - 3; // -3 to +3 days
-          final date = today.add(Duration(days: offset));
-          final isSelected = offset == _selectedDayOffset;
-          final isToday = offset == 0;
-
-          return GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedDayOffset = offset;
-              });
-            },
-            child: Container(
-              width: 60,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              decoration: BoxDecoration(
-                color: isSelected ? AppColors.blue : Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isToday
-                      ? AppColors.orange
-                      : (isSelected ? AppColors.blue : AppColors.divider),
-                  width: isToday ? 2 : 1,
-                ),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    DateFormat('EEE').format(date),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isSelected ? Colors.white : AppColors.textSecondary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    date.day.toString(),
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: isSelected ? Colors.white : AppColors.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
 
   Widget _buildEmptyState(int dayOfWeek) {
     final dayName = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][dayOfWeek];
