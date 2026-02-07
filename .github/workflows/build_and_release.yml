@@ -29,16 +29,16 @@ jobs:
       - name: Get Dependencies
         run: flutter pub get
 
-      - name: Create keystore.properties
-        # We use debug keystore for simplicity as we don't have secrets setup yet
-        # Ideally user should add secrets. For now, we build debug or unsigned release?
-        # Flutter build apk --release requires signing config.
-        # android/app/build.gradle uses debug keys for release build (we saw this earlier).
-        # So it should work out of the box.
-        run: echo "storePassword=android\nkeyPassword=android\nkeyAlias=androiddebugkey\nstoreFile=debug.keystore" > android/key.properties
+      - name: Generate Debug Keystore
+        run: |
+          mkdir -p ~/.android
+          keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
 
       - name: Build APK
         run: flutter build apk --release
+
+      - name: List Build Output (Debug)
+        run: ls -R build/app/outputs/
 
       - name: Create Release
         id: create_release
