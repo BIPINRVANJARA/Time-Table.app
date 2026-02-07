@@ -41,6 +41,17 @@ https://github.com/BIPINRVANJARA/Time-Table.app/releases/latest/download/app-rel
 - When you release `v1.0.2`, the link automatically serves the new file.
 
 ## 4. Verification
-1.  Push a tag (e.g., `v1.0.0`).
-2.  Wait for the Action to finish.
 3.  Visit the link above in your browser. It should start downloading the APK.
+
+## 5. Website Integration (Already Configured)
+We have updated your website's `src/components/home/HeroSection.tsx` to include a "Download App" button pointing to the link above.
+
+**To make these changes live:**
+1.  Navigate to your website project folder (`himatnagar-it-hub-main`).
+2.  Push the changes to your website's repository.
+    ```bash
+    git add .
+    git commit -m "feat: Add download button for app"
+    git push origin main
+    ```
+3.  Wait for your website deployment (Vercel/Netlify) to update.
