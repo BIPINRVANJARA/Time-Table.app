@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../services/database_service.dart';
-import 'weekly_setup_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'today_schedule_screen.dart';
+import 'login_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -69,13 +69,13 @@ class _SplashScreenState extends State<SplashScreen>
     
     if (!mounted) return;
 
-    // Check if user has any subjects
-    final hasSubjects = DatabaseService.getAllSubjects().isNotEmpty;
+    // Check if user is logged in
+    final user = FirebaseAuth.instance.currentUser;
 
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
-            hasSubjects ? const TodayScheduleScreen() : const WeeklySetupScreen(),
+            user != null ? const TodayScheduleScreen() : const LoginScreen(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
         },

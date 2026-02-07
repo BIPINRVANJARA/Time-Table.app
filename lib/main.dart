@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_core/firebase_core.dart'; // Add this import
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'screens/splash_screen.dart';
 import 'services/database_service.dart';
 import 'services/notification_service.dart';
 import 'utils/theme.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/today_schedule_screen.dart';
-import 'screens/weekly_setup_screen.dart';
+import 'screens/login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  print('DEBUG: App starting...');
 
   // Set preferred orientations
   await SystemChrome.setPreferredOrientations([
@@ -18,8 +22,14 @@ void main() async {
   ]);
 
   // Initialize services
-  await DatabaseService.initialize();
+  print('DEBUG: Initializing Firebase...');
+  await Firebase.initializeApp();
+  print('DEBUG: Firebase initialized.');
+  
+  // Initialize Notification Service
+  print('DEBUG: Initializing Notifications...');
   await NotificationService().initialize();
+  print('DEBUG: Notifications initialized.');
 
   runApp(const MyApp());
 }
@@ -39,10 +49,10 @@ class MyApp extends StatelessWidget {
     );
   }
 
-  // Determine initial screen based on onboarding status and timetable setup
+  // Determine initial screen based on auth status and onboarding
   Widget _getInitialScreen() {
-    return FutureBuilder<bool>(
-      future: _checkOnboardingStatus(),
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -51,21 +61,17 @@ class MyApp extends StatelessWidget {
             ),
           );
         }
+
+        final user = snapshot.data;
         
-        final onboardingComplete = snapshot.data ?? false;
-        
-        if (!onboardingComplete) {
-          return const OnboardingScreen();
+        // If no user is logged in, show Login Screen
+        if (user == null) {
+          return const LoginScreen();
         }
-        
-        final hasSubjects = DatabaseService.hasSubjects();
-        return hasSubjects ? const TodayScheduleScreen() : const WeeklySetupScreen();
+
+        // If user is logged in, show Today's Schedule
+        return const TodayScheduleScreen();
       },
     );
-  }
-  
-  Future<bool> _checkOnboardingStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('onboarding_complete') ?? false;
   }
 }

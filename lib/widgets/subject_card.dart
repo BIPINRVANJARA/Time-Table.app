@@ -13,9 +13,32 @@ class SubjectCard extends StatelessWidget {
     this.onDelete,
   });
 
+  // Get deterministic color based on subject name
+  Color _getSubjectColor() {
+    if (subject.colorValue != null) {
+      return Color(subject.colorValue!);
+    }
+    
+    // List of nice colors for subjects
+    final colors = [
+      const Color(0xFF5D9CEC), // Blue
+      const Color(0xFF4FC1E9), // Light Blue
+      const Color(0xFF48CFAD), // Mint
+      const Color(0xFFA0D468), // Green
+      const Color(0xFFFFCE54), // Yellow
+      const Color(0xFFFC6E51), // Orange
+      const Color(0xFFED5565), // Red
+      const Color(0xFFAC92EC), // Purple
+      const Color(0xFFEC87C0), // Pink
+    ];
+    
+    final hash = subject.subjectName.codeUnits.fold(0, (sum, char) => sum + char);
+    return colors[hash % colors.length];
+  }
+
   // Get gradient colors based on subject color
   List<Color> _getGradientColors() {
-    final baseColor = Color(subject.colorValue);
+    final baseColor = _getSubjectColor();
     return [
       baseColor,
       baseColor.withOpacity(0.7),
@@ -25,6 +48,7 @@ class SubjectCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gradientColors = _getGradientColors();
+    final baseColor = _getSubjectColor();
     
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -37,7 +61,7 @@ class SubjectCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Color(subject.colorValue).withOpacity(0.3),
+            color: baseColor.withOpacity(0.3),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),

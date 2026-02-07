@@ -1,83 +1,131 @@
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/subject.dart';
+import '../models/user_model.dart';
+
 
 class DatabaseService {
-  static const String _subjectsBoxName = 'subjects';
-  static Box<Subject>? _subjectsBox;
+  static final FirebaseFirestore _db = FirebaseFirestore.instance;
+  static final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Initialize Hive and open boxes
-  static Future<void> initialize() async {
-    await Hive.initFlutter();
-    Hive.registerAdapter(SubjectAdapter());
-    _subjectsBox = await Hive.openBox<Subject>(_subjectsBoxName);
+
+
+  // --- User Profile Methods ---
+
+  // Save/Update User Profile (Academic Setup)
+  static Future<void> updateUserProfile(UserModel userModel) async {
+    await _db.collection('users').doc(userModel.uid).set(
+      userModel.toMap(),
+      SetOptions(merge: true),
+    );
   }
 
-  // Get the subjects box
-  static Box<Subject> get subjectsBox {
-    if (_subjectsBox == null || !_subjectsBox!.isOpen) {
-      throw Exception('Subjects box is not initialized. Call initialize() first.');
-    }
-    return _subjectsBox!;
+  // Stream current user profile (Reactive)
+  static Stream<UserModel?> streamUserProfile() {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return Stream.value(null);
+
+    return _db.collection('users').doc(uid).snapshots().map((doc) {
+      if (!doc.exists) return null;
+      return UserModel.fromMap(doc.data() as Map<String, dynamic>, uid);
+    });
   }
 
-  // Add a new subject
-  static Future<void> addSubject(Subject subject) async {
-    await subjectsBox.put(subject.id, subject);
+  // Get current user profile (One-time)
+  static Future<UserModel?> getUserProfile() async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return null;
+
+    final doc = await _db.collection('users').doc(uid).get();
+    if (!doc.exists) return null;
+
+    return UserModel.fromMap(doc.data() as Map<String, dynamic>, uid);
   }
 
-  // Update an existing subject
-  static Future<void> updateSubject(Subject subject) async {
-    await subjectsBox.put(subject.id, subject);
-  }
+  // --- Timetable Methods (Firestore) ---
 
-  // Delete a subject
-  static Future<void> deleteSubject(String id) async {
-    await subjectsBox.delete(id);
-  }
-
-  // Get all subjects
-  static List<Subject> getAllSubjects() {
-    return subjectsBox.values.toList();
-  }
-
-  // Get subjects for a specific day (1=Monday, 7=Sunday)
-  static List<Subject> getSubjectsByDay(int dayOfWeek) {
-    final subjects = subjectsBox.values
-        .where((subject) => subject.dayOfWeek == dayOfWeek)
-        .toList();
+  // Add a new subject (Admin only path)
+  static Future<void> addSubject(
+      String branch, String semester, String division, Subject subject) async {
+    final docId = '${branch}_${semester}_${division}'.replaceAll(' ', '');
+    final ref = _db
+        .collection('timetables')
+        .doc(docId)
+        .collection('subjects')
+        .doc(); // Auto-generate ID if not provided
     
-    // Sort by start time using minutes since midnight
-    // This is the ONLY correct way to sort times
-    subjects.sort((a, b) => a.startInMinutes.compareTo(b.startInMinutes));
+    subject.id = ref.id; // Assign the generated ID to the subject object
+    await ref.set(subject.toMap());
+  }
+
+  // Update an existing subject (Admin only path)
+  static Future<void> updateSubject(
+      String branch, String semester, String division, Subject subject) async {
+    final docId = '${branch}_${semester}_${division}'.replaceAll(' ', '');
+    await _db
+        .collection('timetables')
+        .doc(docId)
+        .collection('subjects')
+        .doc(subject.id)
+        .update(subject.toMap());
+  }
+
+  // Delete a subject (Admin only path)
+  static Future<void> deleteSubject(
+      String branch, String semester, String division, String subjectId) async {
+    final docId = '${branch}_${semester}_${division}'.replaceAll(' ', '');
+    await _db
+        .collection('timetables')
+        .doc(docId)
+        .collection('subjects')
+        .doc(subjectId)
+        .delete();
+  }
+
+  // Stream timetable based on academic details
+  // branches/{branch}/semesters/{sem}/divisions/{div}/timetable
+  static Stream<List<Subject>> streamTimetable(
+      String branch, String semester, String division) {
     
-    return subjects;
+    // Note: This path structure assumes the hierarchy:
+    // colleges/default/branches/Computer/semesters/1/divisions/A/timetable/subjectId
+    // For simplicity in this demo, let's use a flatter structure if possible, 
+    // OR we stick to the plan:
+    // root -> timetables -> {structure_id} -> subjects
+    
+    // Let's us a query based approach for simplicity first:
+    // collection: 'timetables'
+    // fields: branch, semester, division
+    
+    // Actually, the plan suggested: College > Branch > Sem...
+    // Let's construct the path dynamically.
+    // For now, let's assume we store subjects in a root collection 'subjects' 
+    // and query them (this might be easier to manage than deep nesting for now).
+    // NO, deep nesting is better for read security rules.
+    
+    // Path: timetables (collection) -> {branch}_{sem}_{div} (doc) -> subjects (subcollection)
+    final docId = '${branch}_${semester}_${division}'.replaceAll(' ', '');
+    
+    return _db
+        .collection('timetables')
+        .doc(docId)
+        .collection('subjects')
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => Subject.fromFirestore(doc))
+          .toList();
+    });
   }
 
-  // Get subjects for today
-  static List<Subject> getTodaySubjects() {
-    final today = DateTime.now().weekday;
-    return getSubjectsByDay(today);
-  }
-
-  // Get a subject by ID
-  static Subject? getSubjectById(String id) {
-    return subjectsBox.get(id);
-  }
-
-  // Delete all subjects (for reset functionality)
-  static Future<void> deleteAllSubjects() async {
-    await subjectsBox.clear();
-  }
-
-  // Check if there are any subjects
+  // Temporary helper to keep main.dart compiling
   static bool hasSubjects() {
-    return subjectsBox.isNotEmpty;
-  }
-
-  // Get count of subjects for a specific day
-  static int getSubjectCountByDay(int dayOfWeek) {
-    return subjectsBox.values
-        .where((subject) => subject.dayOfWeek == dayOfWeek)
-        .length;
+    // This previously checked local storage. 
+    // Now we rely on Auth + Academic Setup status.
+    // We can't synchronously check Firestore.
+    // We should return true/false based on if the user has completed setup.
+    // For now, let's return false so we force checks elsewhere.
+    return false; 
   }
 }
+

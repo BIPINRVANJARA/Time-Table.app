@@ -1,95 +1,95 @@
-import 'package:hive/hive.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-part 'subject.g.dart';
-
-@HiveType(typeId: 0)
-class Subject extends HiveObject {
-  @HiveField(0)
+class Subject {
   String id;
-
-  @HiveField(1)
   String subjectName;
-
-  @HiveField(2)
-  int dayOfWeek; // 1=Monday, 2=Tuesday, ..., 7=Sunday
-
-  @HiveField(3)
+  String facultyName;
+  String type; // 'lecture' or 'lab'
+  int dayOfWeek; // 1=Monday, 7=Sunday
   int startHour;
-
-  @HiveField(4)
   int startMinute;
-
-  @HiveField(5)
   int endHour;
-
-  @HiveField(6)
   int endMinute;
-
-  @HiveField(7)
-  int colorValue; // Color stored as int
-
-  @HiveField(8)
   bool reminderEnabled;
+  int reminderMinutesBefore;
+  int? colorValue; // ARGB value
+  String? batch; // Specific batch (e.g., A1, B1) or null for all
 
-  @HiveField(9)
-  int reminderMinutesBefore; // e.g., 10 minutes before class
 
   Subject({
     required this.id,
     required this.subjectName,
+    this.facultyName = '',
+    this.type = 'lecture',
     required this.dayOfWeek,
     required this.startHour,
     required this.startMinute,
     required this.endHour,
     required this.endMinute,
-    required this.colorValue,
     this.reminderEnabled = false,
-    this.reminderMinutesBefore = 10,
+    this.reminderMinutesBefore = 5,
+    this.colorValue,
+    this.batch,
   });
 
-  // Helper method to get start time as DateTime (for today)
+  // Factory to create from Firestore document
+  factory Subject.fromFirestore(DocumentSnapshot doc) {
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    return Subject(
+      id: doc.id,
+      subjectName: data['subjectName'] ?? '',
+      facultyName: data['facultyName'] ?? '',
+      type: data['type'] ?? 'lecture',
+      dayOfWeek: data['dayOfWeek'] ?? 1,
+      startHour: data['startHour'] ?? 9,
+      startMinute: data['startMinute'] ?? 0,
+      endHour: data['endHour'] ?? 10,
+      endMinute: data['endMinute'] ?? 0,
+      reminderEnabled: data['reminderEnabled'] ?? false,
+      reminderMinutesBefore: data['reminderMinutesBefore'] ?? 5,
+      colorValue: data['colorValue'],
+      batch: data['batch'],
+    );
+  }
+
+  // Convert to Map for Firestore
+  Map<String, dynamic> toMap() {
+    return {
+      'subjectName': subjectName,
+      'facultyName': facultyName,
+      'type': type,
+      'dayOfWeek': dayOfWeek,
+      'startHour': startHour,
+      'startMinute': startMinute,
+      'endHour': endHour,
+      'endMinute': endMinute,
+      'reminderEnabled': reminderEnabled,
+      'reminderMinutesBefore': reminderMinutesBefore,
+      'colorValue': colorValue,
+      'batch': batch,
+    };
+  }
+
+  // Helpers
   DateTime get startTime {
     final now = DateTime.now();
     return DateTime(now.year, now.month, now.day, startHour, startMinute);
   }
-
-  // Helper method to get end time as DateTime (for today)
+  
   DateTime get endTime {
     final now = DateTime.now();
     return DateTime(now.year, now.month, now.day, endHour, endMinute);
   }
 
-  // Helper method to get formatted time string
   String get timeRange {
     String formatTime(int hour, int minute) {
       final period = hour >= 12 ? 'PM' : 'AM';
       final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
       return '$displayHour:${minute.toString().padLeft(2, '0')} $period';
     }
-
     return '${formatTime(startHour, startMinute)} - ${formatTime(endHour, endMinute)}';
   }
 
-  // Get day name
-  String get dayName {
-    const days = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    return days[dayOfWeek];
-  }
-
-  // Get short day name
-  String get shortDayName {
-    const days = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return days[dayOfWeek];
-  }
-
-  // Get start time as minutes since midnight (for sorting)
-  // This is the CANONICAL time representation
-  int get startInMinutes {
-    return (startHour * 60) + startMinute;
-  }
-
-  // Get end time as minutes since midnight
-  int get endInMinutes {
-    return (endHour * 60) + endMinute;
-  }
+  int get startInMinutes => (startHour * 60) + startMinute;
 }
+
