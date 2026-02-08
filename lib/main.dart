@@ -23,7 +23,9 @@ void main() async {
 
   // Initialize services
   print('DEBUG: Initializing Firebase...');
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   print('DEBUG: Firebase initialized.');
   
   // Initialize Notification Service
