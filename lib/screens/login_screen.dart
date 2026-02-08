@@ -68,6 +68,81 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _showForgotPasswordDialog() async {
+    final emailController = TextEditingController();
+    
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset Password'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Enter your email address to receive a password reset link.'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: emailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.email_outlined),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final email = emailController.text.trim();
+              if (email.isEmpty || !email.contains('@')) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please enter a valid email')),
+                );
+                return;
+              }
+
+              Navigator.pop(context); // Close dialog
+              
+              try {
+                setState(() => _isLoading = true);
+                await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+                
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Password reset link sent! Check your email.'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              } on FirebaseAuthException catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(e.message ?? 'Failed to send reset email'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              } finally {
+                if (mounted) {
+                  setState(() => _isLoading = false);
+                }
+              }
+            },
+            child: const Text('Send Link'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -281,49 +356,64 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         
-                        const SizedBox(height: 32),
-                        
-                        // Login button
-                        SizedBox(
-                          width: double.infinity,
-                          height: 56,
-                          child: ElevatedButton(
-                            onPressed: _isLoading ? null : _login,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: const Color(0xFF6A11CB),
-                              elevation: 8,
-                              shadowColor: Colors.black.withOpacity(0.2),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
+                            // Forgot Password Link
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: _showForgotPasswordDialog,
+                                child: Text(
+                                  'Forgot Password?',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.9),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                               ),
                             ),
-                            child: _isLoading
-                                ? const SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(
-                                      color: Color(0xFF6A11CB),
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : const Text(
-                                    'LOGIN',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 1.5,
-                                    ),
+
+                            const SizedBox(height: 24),
+                        
+                            // Login button
+                            SizedBox(
+                              width: double.infinity,
+                              height: 56,
+                              child: ElevatedButton(
+                                onPressed: _isLoading ? null : _login,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: const Color(0xFF6A11CB),
+                                  elevation: 8,
+                                  shadowColor: Colors.black.withOpacity(0.2),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
                                   ),
-                          ),
-                        ),
-                        
-                        const SizedBox(height: 24),
-                        
-                        // Sign up link
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
+                                ),
+                                child: _isLoading
+                                    ? const SizedBox(
+                                        width: 24,
+                                        height: 24,
+                                        child: CircularProgressIndicator(
+                                          color: Color(0xFF6A11CB),
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Text(
+                                        'LOGIN',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 1.5,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                            
+                            const SizedBox(height: 24),
+                            
+                            // Sign up link
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
                             Text(
                               "Don't have an account? ",
                               style: TextStyle(color: Colors.white.withOpacity(0.8)),
