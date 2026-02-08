@@ -43,69 +43,74 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         backgroundColor: const Color(0xFF7BA5E8),
         foregroundColor: Colors.white,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Manage Timetables',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF4A4A4A),
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Select a combination to create or modify a schedule.',
-              style: TextStyle(color: Colors.grey),
-            ),
-            const SizedBox(height: 32),
-            _buildSectionTitle('Branch'),
-            _buildDropdown(
-              hint: 'Select Branch',
-              value: _selectedBranch,
-              items: CollegeStructureService.branches,
-              onChanged: (val) => setState(() => _selectedBranch = val),
-            ),
-            const SizedBox(height: 24),
-            _buildSectionTitle('Semester'),
-            _buildDropdown(
-              hint: 'Select Semester',
-              value: _selectedSemester,
-              items: CollegeStructureService.semesters,
-              onChanged: (val) => setState(() => _selectedSemester = val),
-            ),
-            const SizedBox(height: 24),
-            _buildSectionTitle('Division'),
-            _buildDropdown(
-              hint: 'Select Division',
-              value: _selectedDivision,
-              items: CollegeStructureService.divisions,
-              onChanged: (val) => setState(() => _selectedDivision = val),
-            ),
-            const SizedBox(height: 48),
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton.icon(
-                onPressed: _navigateToEditor,
-                icon: const Icon(Icons.edit_calendar_rounded),
-                label: const Text(
-                  'Manage Timetable',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF9066),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Manage Timetables',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF4A4A4A),
                   ),
                 ),
-              ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Select a combination to create or modify a schedule.',
+                  style: TextStyle(color: Colors.grey),
+                ),
+                const SizedBox(height: 32),
+                _buildSectionTitle('Branch'),
+                _buildDropdown(
+                  hint: 'Select Branch',
+                  value: _selectedBranch,
+                  items: CollegeStructureService.branches,
+                  onChanged: (val) => setState(() => _selectedBranch = val),
+                ),
+                const SizedBox(height: 24),
+                _buildSectionTitle('Semester'),
+                _buildDropdown(
+                  hint: 'Select Semester',
+                  value: _selectedSemester,
+                  items: CollegeStructureService.semesters,
+                  onChanged: (val) => setState(() => _selectedSemester = val),
+                ),
+                const SizedBox(height: 24),
+                _buildSectionTitle('Division'),
+                _buildDropdown(
+                  hint: 'Select Division',
+                  value: _selectedDivision,
+                  items: CollegeStructureService.divisions,
+                  onChanged: (val) => setState(() => _selectedDivision = val),
+                ),
+                const SizedBox(height: 48),
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton.icon(
+                    onPressed: _navigateToEditor,
+                    icon: const Icon(Icons.edit_calendar_rounded),
+                    label: const Text(
+                      'Manage Timetable',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF9066),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(28),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

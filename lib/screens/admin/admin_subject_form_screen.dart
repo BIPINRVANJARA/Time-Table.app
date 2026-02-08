@@ -139,126 +139,131 @@ class _AdminSubjectFormScreenState extends State<AdminSubjectFormScreen> {
             IconButton(onPressed: _save, icon: const Icon(Icons.check_rounded)),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Subject Name', border: OutlineInputBorder()),
-                validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _facultyController,
-                decoration: const InputDecoration(labelText: 'Faculty Name (Optional)', border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: _type,
-                decoration: const InputDecoration(labelText: 'Type', border: OutlineInputBorder()),
-                items: const [
-                  DropdownMenuItem(value: 'lecture', child: Text('Lecture')),
-                  DropdownMenuItem(value: 'lab', child: Text('Practical / Lab')),
-                ],
-                onChanged: (v) => setState(() => _type = v!),
-              ),
-              
-              if (_type == 'lab') ...[
-                const SizedBox(height: 16),
-                const Text('Select Batch', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8, 
-                  children: ['A1', 'A2', 'A3', 'B1', 'B2', 'B3'].map((batch) {
-                    final isSelected = _selectedBatch == batch;
-                    return ChoiceChip(
-                      label: Text(batch),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        setState(() {
-                          _selectedBatch = selected ? batch : null;
-                        });
-                      },
-                      selectedColor: Theme.of(context).primaryColor.withOpacity(0.2),
-                      backgroundColor: Colors.white,
-                      side: BorderSide(color: isSelected ? Theme.of(context).primaryColor : Colors.grey.shade300),
-                    );
-                  }).toList(),
-                ),
-              ],
-              
-              const SizedBox(height: 24),
-              const Text('Pick Color', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Option for "Default/Deterministic" color
-                  GestureDetector(
-                    onTap: () => setState(() => _selectedColorValue = null),
-                    child: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[200],
-                        shape: BoxShape.circle,
-                        border: _selectedColorValue == null
-                            ? Border.all(color: Colors.black, width: 2)
-                            : null,
-                      ),
-                      child: const Icon(Icons.auto_awesome, size: 20, color: Colors.grey),
-                    ),
+                  TextFormField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(labelText: 'Subject Name', border: OutlineInputBorder()),
+                    validator: (v) => v == null || v.isEmpty ? 'Required' : null,
                   ),
-                  ..._presetColors.map((color) {
-                    final isSelected = _selectedColorValue == color.value;
-                    return GestureDetector(
-                      onTap: () => setState(() => _selectedColorValue = color.value),
-                      child: Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: color,
-                          shape: BoxShape.circle,
-                          border: isSelected
-                              ? Border.all(color: Colors.black, width: 2)
-                              : null,
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _facultyController,
+                    decoration: const InputDecoration(labelText: 'Faculty Name (Optional)', border: OutlineInputBorder()),
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: _type,
+                    decoration: const InputDecoration(labelText: 'Type', border: OutlineInputBorder()),
+                    items: const [
+                      DropdownMenuItem(value: 'lecture', child: Text('Lecture')),
+                      DropdownMenuItem(value: 'lab', child: Text('Practical / Lab')),
+                    ],
+                    onChanged: (v) => setState(() => _type = v!),
+                  ),
+                  
+                  if (_type == 'lab') ...[
+                    const SizedBox(height: 16),
+                    const Text('Select Batch', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8, 
+                      children: ['A1', 'A2', 'A3', 'B1', 'B2', 'B3'].map((batch) {
+                        final isSelected = _selectedBatch == batch;
+                        return ChoiceChip(
+                          label: Text(batch),
+                          selected: isSelected,
+                          onSelected: (selected) {
+                            setState(() {
+                              _selectedBatch = selected ? batch : null;
+                            });
+                          },
+                          selectedColor: Theme.of(context).primaryColor.withOpacity(0.2),
+                          backgroundColor: Colors.white,
+                          side: BorderSide(color: isSelected ? Theme.of(context).primaryColor : Colors.grey.shade300),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                  
+                  const SizedBox(height: 24),
+                  const Text('Pick Color', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      // Option for "Default/Deterministic" color
+                      GestureDetector(
+                        onTap: () => setState(() => _selectedColorValue = null),
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            shape: BoxShape.circle,
+                            border: _selectedColorValue == null
+                                ? Border.all(color: Colors.black, width: 2)
+                                : null,
+                          ),
+                          child: const Icon(Icons.auto_awesome, size: 20, color: Colors.grey),
                         ),
-                        child: isSelected
-                            ? const Icon(Icons.check, color: Colors.white, size: 20)
-                            : null,
                       ),
-                    );
-                  }),
+                      ..._presetColors.map((color) {
+                        final isSelected = _selectedColorValue == color.value;
+                        return GestureDetector(
+                          onTap: () => setState(() => _selectedColorValue = color.value),
+                          child: Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: color,
+                              shape: BoxShape.circle,
+                              border: isSelected
+                                  ? Border.all(color: Colors.black, width: 2)
+                                  : null,
+                            ),
+                            child: isSelected
+                                ? const Icon(Icons.check, color: Colors.white, size: 20)
+                                : null,
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  const Text('Time Slot', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _selectTime(true),
+                          icon: const Icon(Icons.access_time),
+                          label: Text('Starts: ${_startTime.format(context)}'),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _selectTime(false),
+                          icon: const Icon(Icons.access_time),
+                          label: Text('Ends: ${_endTime.format(context)}'),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
-              const SizedBox(height: 32),
-              const Text('Time Slot', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _selectTime(true),
-                      icon: const Icon(Icons.access_time),
-                      label: Text('Starts: ${_startTime.format(context)}'),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _selectTime(false),
-                      icon: const Icon(Icons.access_time),
-                      label: Text('Ends: ${_endTime.format(context)}'),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            ),
           ),
         ),
       ),

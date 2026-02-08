@@ -9,6 +9,13 @@ We have added a **GitHub Action** (`.github/workflows/build_and_release.yml`) to
   2.  Create a "Release" on GitHub.
   3.  Upload the APK to that release.
 
+## 1.5. Prerequisite: GitHub Secrets (Security)
+To keep your API keys safe, we use **GitHub Secrets**. If you ever set this up on a new repo:
+1.  Go to `Settings > Secrets and variables > Actions`.
+2.  Add a New Repository Secret:
+    -   **Name**: `GOOGLE_SERVICES_JSON_BASE64`
+    -   **Value**: (You must convert `android/app/google-services.json` to Base64 first to avoid formatting errors)
+
 ## 2. Triggering a New Release
 To publish a new version of your app:
 
@@ -41,17 +48,6 @@ https://github.com/BIPINRVANJARA/Time-Table.app/releases/latest/download/app-rel
 - When you release `v1.0.2`, the link automatically serves the new file.
 
 ## 4. Verification
+1.  Push a tag (e.g., `v1.0.0`).
+2.  Wait for the Action to finish.
 3.  Visit the link above in your browser. It should start downloading the APK.
-
-## 5. Website Integration (Already Configured)
-We have updated your website's `src/components/home/HeroSection.tsx` to include a "Download App" button pointing to the link above.
-
-**To make these changes live:**
-1.  Navigate to your website project folder (`himatnagar-it-hub-main`).
-2.  Push the changes to your website's repository.
-    ```bash
-    git add .
-    git commit -m "feat: Add download button for app"
-    git push origin main
-    ```
-3.  Wait for your website deployment (Vercel/Netlify) to update.
