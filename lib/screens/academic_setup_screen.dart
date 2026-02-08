@@ -6,7 +6,9 @@ import '../models/user_model.dart';
 import 'today_schedule_screen.dart';
 
 class AcademicSetupScreen extends StatefulWidget {
-  const AcademicSetupScreen({super.key});
+  final UserModel? userModel;
+  
+  const AcademicSetupScreen({super.key, this.userModel});
 
   @override
   State<AcademicSetupScreen> createState() => _AcademicSetupScreenState();
@@ -18,6 +20,17 @@ class _AcademicSetupScreenState extends State<AcademicSetupScreen> {
   String? _selectedDivision;
   String? _selectedBatch;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.userModel != null) {
+      _selectedBranch = widget.userModel!.branch;
+      _selectedSemester = widget.userModel!.semester;
+      _selectedDivision = widget.userModel!.division;
+      _selectedBatch = widget.userModel!.batch;
+    }
+  }
 
   Future<void> _saveProfile() async {
     if (_selectedBranch == null ||
@@ -96,8 +109,8 @@ class _AcademicSetupScreenState extends State<AcademicSetupScreen> {
                 color: Colors.white,
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Academic Setup',
+              Text(
+                widget.userModel != null ? 'Edit Profile' : 'Academic Setup',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -186,8 +199,8 @@ class _AcademicSetupScreenState extends State<AcademicSetupScreen> {
                             ),
                             child: _isLoading
                                 ? const CircularProgressIndicator(color: Colors.white)
-                                : const Text(
-                                    'Continue',
+                                : Text(
+                                    widget.userModel != null ? 'Save Changes' : 'Continue',
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,

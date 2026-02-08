@@ -101,6 +101,17 @@ class _TodayScheduleScreenState extends State<TodayScheduleScreen> {
                   },
                 ),
               IconButton(
+                icon: const Icon(Icons.person, color: Colors.black54),
+                tooltip: 'Profile',
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => AcademicSetupScreen(userModel: userProfile),
+                    ),
+                  );
+                },
+              ),
+              IconButton(
                 icon: const Icon(Icons.logout, color: Colors.black54),
                 tooltip: 'Logout',
                 onPressed: () async {
