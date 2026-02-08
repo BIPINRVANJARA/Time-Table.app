@@ -116,8 +116,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Password reset link sent! Check your email.'),
+                      content: Text('Reset link sent! Please check your email (and Spam folder).'),
                       backgroundColor: Colors.green,
+                      duration: Duration(seconds: 5),
                     ),
                   );
                 }
