@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart'; // Add this import
 import 'package:firebase_auth/firebase_auth.dart';
+import 'firebase_options.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'screens/splash_screen.dart';
 import 'services/database_service.dart';
