@@ -79,33 +79,11 @@ plugins {
 
 ## Step 6: Set Up Firestore Security Rules
 
-Replace default rules with:
+I have created a `firestore.rules` file in your project root with these secure rules.
 
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // Users collection
-    match /users/{userId} {
-      allow read: if request.auth.uid == userId;
-      allow write: if request.auth.uid == userId;
-    }
-    
-    // Timetables - students can read, only admins can write
-    match /timetables/{document=**} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && 
-                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-    
-    // Branches, semesters, etc. - read-only for all authenticated users
-    match /config/{document=**} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && 
-                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-  }
-}
+To deploy them, run:
+```bash
+firebase deploy --only firestore
 ```
 
 ---

@@ -1,0 +1,28 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users collection
+    // - Users can read/write their own profile
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Timetables
+    // - Authenticated users (students) can READ
+    // - Only users with 'admin' role can WRITE
+    match /timetables/{document=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && 
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Configuration (Branches, Semesters, etc.)
+    // - Readable by all, writable only by admin
+    match /config/{document=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && 
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+  }
+}
