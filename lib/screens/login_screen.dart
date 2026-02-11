@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../services/auth_security_service.dart';
 import 'signup_screen.dart';
 import 'academic_setup_screen.dart';
 import 'today_schedule_screen.dart';
-import 'email_verification_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,25 +17,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
-  bool _isLockedOut = false;
-  int _remainingLockoutMinutes = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _checkLockoutStatus();
-  }
-
-  Future<void> _checkLockoutStatus() async {
-    final lockedOut = await AuthSecurityService.isLockedOut();
-    if (lockedOut) {
-      final remaining = await AuthSecurityService.getRemainingLockoutMinutes();
-      setState(() {
-        _isLockedOut = true;
-        _remainingLockoutMinutes = remaining;
-      });
-    }
-  }
 
   @override
   void dispose() {
@@ -49,52 +28,13 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Check if account is locked out
-    final lockedOut = await AuthSecurityService.isLockedOut();
-    if (lockedOut) {
-      final remaining = await AuthSecurityService.getRemainingLockoutMinutes();
-      setState(() {
-        _isLockedOut = true;
-        _remainingLockoutMinutes = remaining;
-      });
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Too many failed attempts. Please try again in $_remainingLockoutMinutes minutes.'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
-          ),
-        );
-      }
-      return;
-    }
-
     setState(() => _isLoading = true);
 
     try {
-      final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
-
-      // Check if email is verified
-      if (!userCredential.user!.emailVerified) {
-        // Send verification email if not already sent
-        await userCredential.user!.sendEmailVerification();
-        
-        if (mounted) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (context) => const EmailVerificationScreen(),
-            ),
-          );
-        }
-        return;
-      }
-
-      // Clear failed attempts on successful login
-      await AuthSecurityService.clearFailedAttempts();
       
       if (mounted) {
         Navigator.of(context).pushReplacement(
@@ -104,9 +44,6 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } on FirebaseAuthException catch (e) {
-      // Record failed attempt
-      await AuthSecurityService.recordFailedAttempt(_emailController.text.trim());
-      
       String message = 'Login failed';
       if (e.code == 'user-not-found') {
         message = 'No account found with this email';
@@ -114,16 +51,6 @@ class _LoginScreenState extends State<LoginScreen> {
         message = 'Incorrect password';
       } else if (e.code == 'invalid-email') {
         message = 'Invalid email address';
-      } else if (e.code == 'invalid-credential') {
-        message = 'Invalid email or password';
-      }
-
-      // Check attempts and show warning
-      final attempts = await AuthSecurityService.getFailedAttemptCount();
-      final remaining = AuthSecurityService.maxFailedAttempts - attempts;
-      
-      if (remaining > 0 && remaining <= 2) {
-        message += '\n⚠️ $remaining attempts remaining before lockout';
       }
       
       if (mounted) {
@@ -131,13 +58,9 @@ class _LoginScreenState extends State<LoginScreen> {
           SnackBar(
             content: Text(message),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
           ),
         );
       }
-
-      // Check if now locked out
-      await _checkLockoutStatus();
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -267,46 +190,6 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
 
           SafeArea(
-            child: Column(
-              children: [
-                // Lockout Warning Banner
-                if (_isLockedOut)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade700,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.lock_clock_rounded,
-                          color: Colors.white,
-                          size: 24,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Account locked due to too many failed attempts. Try again in $_remainingLockoutMinutes minutes.',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                Expanded(
               child: Center(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(24.0),
@@ -560,9 +443,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
-            ),
-              ],
-            ),
           ),
         ],
       ),
