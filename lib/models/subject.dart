@@ -14,6 +14,8 @@ class Subject {
   int reminderMinutesBefore;
   int? colorValue; // ARGB value
   String? batch; // Specific batch (e.g., A1, B1) or null for all
+  String? facultyId; // Faculty ID assigned to this lecture
+  String? roomNumber; // Room number where lecture is held
 
 
   Subject({
@@ -30,6 +32,8 @@ class Subject {
     this.reminderMinutesBefore = 5,
     this.colorValue,
     this.batch,
+    this.facultyId,
+    this.roomNumber,
   });
 
   // Factory to create from Firestore document
@@ -49,6 +53,8 @@ class Subject {
       reminderMinutesBefore: data['reminderMinutesBefore'] ?? 5,
       colorValue: data['colorValue'],
       batch: data['batch'],
+      facultyId: data['facultyId'],
+      roomNumber: data['roomNumber'],
     );
   }
 
@@ -67,6 +73,8 @@ class Subject {
       'reminderMinutesBefore': reminderMinutesBefore,
       'colorValue': colorValue,
       'batch': batch,
+      'facultyId': facultyId,
+      'roomNumber': roomNumber,
     };
   }
 

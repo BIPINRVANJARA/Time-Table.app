@@ -113,13 +113,49 @@ class SubjectCard extends StatelessWidget {
                 
                 // Subject name
                 Expanded(
-                  child: Text(
-                    subject.subjectName,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        subject.subjectName,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      if ((subject.roomNumber != null && subject.roomNumber!.isNotEmpty) ||
+                          (subject.batch != null && subject.batch!.isNotEmpty)) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            if (subject.roomNumber != null && subject.roomNumber!.isNotEmpty) ...[
+                              const Icon(Icons.location_on, size: 12, color: Colors.white70),
+                              const SizedBox(width: 4),
+                              Text(
+                                subject.roomNumber!,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                            ],
+                            if (subject.batch != null && subject.batch!.isNotEmpty) ...[
+                              const Icon(Icons.group, size: 12, color: Colors.white70),
+                              const SizedBox(width: 4),
+                              Text(
+                                subject.batch!,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ],
                   ),
                 ),
                 

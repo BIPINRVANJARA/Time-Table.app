@@ -1,29 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import '../services/auth_service.dart';
-import 'signup_screen.dart';
-import 'academic_setup_screen.dart';
-import 'today_schedule_screen.dart';
-import 'email_verification_screen.dart';
-import 'faculty_login_screen.dart';
+import '../services/faculty_service.dart';
+import '../models/faculty.dart';
+import 'faculty/faculty_dashboard_screen.dart';
+import 'login_screen.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class FacultyLoginScreen extends StatefulWidget {
+  const FacultyLoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<FacultyLoginScreen> createState() => _FacultyLoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _FacultyLoginScreenState extends State<FacultyLoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _facultyIdController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _facultyIdController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -34,132 +31,47 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
+      final faculty = await FacultyService.authenticateFaculty(
+        _facultyIdController.text.trim(),
+        _passwordController.text,
       );
-      
-      // Reload user to get latest email verification status
-      await AuthService.reloadUser();
-      
-      // Check if email is verified
-      if (!AuthService.isEmailVerified) {
+
+      if (faculty == null) {
         if (mounted) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (context) => const EmailVerificationScreen(),
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Invalid Faculty ID or Password'),
+              backgroundColor: Colors.red,
             ),
           );
         }
+        setState(() => _isLoading = false);
         return;
       }
-      
+
+      // Success - navigate to faculty dashboard
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (context) => const TodayScheduleScreen(),
+            builder: (context) => FacultyDashboardScreen(
+              facultyId: faculty.facultyId,
+              facultyName: faculty.facultyName,
+            ),
           ),
         );
       }
-    } on FirebaseAuthException catch (e) {
-      String message = 'Login failed';
-      if (e.code == 'user-not-found') {
-        message = 'No account found with this email';
-      } else if (e.code == 'wrong-password') {
-        message = 'Incorrect password';
-      } else if (e.code == 'invalid-email') {
-        message = 'Invalid email address';
-      }
-      
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(message),
+            content: Text('Error: $e'),
             backgroundColor: Colors.red,
           ),
         );
       }
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
-  }
-
-  Future<void> _showForgotPasswordDialog() async {
-    final emailController = TextEditingController();
-    
-    return showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Reset Password'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Enter your email address to receive a password reset link.'),
-            const SizedBox(height: 16),
-            TextField(
-              controller: emailController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.email_outlined),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final email = emailController.text.trim();
-              if (email.isEmpty || !email.contains('@')) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Please enter a valid email')),
-                );
-                return;
-              }
-
-              Navigator.pop(context); // Close dialog
-              
-              try {
-                setState(() => _isLoading = true);
-                await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-                
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Reset link sent! Please check your email (and Spam folder).'),
-                      backgroundColor: Colors.green,
-                      duration: Duration(seconds: 5),
-                    ),
-                  );
-                }
-              } on FirebaseAuthException catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(e.message ?? 'Failed to send reset email'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              } finally {
-                if (mounted) {
-                  setState(() => _isLoading = false);
-                }
-              }
-            },
-            child: const Text('Send Link'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -167,7 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Background Gradient
+          // Background Gradient (Same as Student Login)
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -238,7 +150,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ],
                                 ),
                                 child: const Icon(
-                                  Icons.calendar_month_rounded,
+                                  Icons.school_rounded, // Changed icon for faculty
                                   size: 60,
                                   color: Color(0xFF6A11CB),
                                 ),
@@ -251,7 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         
                         // Welcome Text
                         const Text(
-                          'Welcome Back!',
+                          'Faculty Portal',
                           style: TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.bold,
@@ -261,7 +173,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Sign in to manage your schedule',
+                          'Access your lectures and schedule',
                           style: TextStyle(
                             fontSize: 16,
                             color: Colors.white.withOpacity(0.8),
@@ -290,15 +202,14 @@ class _LoginScreenState extends State<LoginScreen> {
                             key: _formKey,
                             child: Column(
                               children: [
-                                // Email field
+                                // Faculty ID field
                                 TextFormField(
-                                  controller: _emailController,
-                                  keyboardType: TextInputType.emailAddress,
+                                  controller: _facultyIdController,
                                   style: const TextStyle(color: Colors.white),
                                   decoration: InputDecoration(
-                                    labelText: 'Email',
+                                    labelText: 'Faculty ID',
                                     labelStyle: TextStyle(color: Colors.white.withOpacity(0.8)),
-                                    prefixIcon: Icon(Icons.email_outlined, color: Colors.white.withOpacity(0.8)),
+                                    prefixIcon: Icon(Icons.badge_outlined, color: Colors.white.withOpacity(0.8)),
                                     filled: true,
                                     fillColor: Colors.white.withOpacity(0.1),
                                     border: OutlineInputBorder(
@@ -316,10 +227,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                   validator: (value) {
                                     if (value == null || value.isEmpty) {
-                                      return 'Please enter your email';
-                                    }
-                                    if (!value.contains('@')) {
-                                      return 'Please enter a valid email';
+                                      return 'Please enter your Faculty ID';
                                     }
                                     return null;
                                   },
@@ -364,104 +272,60 @@ class _LoginScreenState extends State<LoginScreen> {
                                     if (value == null || value.isEmpty) {
                                       return 'Please enter your password';
                                     }
-                                    if (value.length < 6) {
-                                      return 'Password must be at least 6 characters';
-                                    }
                                     return null;
                                   },
+                                ),
+                                
+                                const SizedBox(height: 32),
+                                // Note: Admin handles forgot password for faculty usually, so simplified layout
+                        
+                                // Login button
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 56,
+                                  child: ElevatedButton(
+                                    onPressed: _isLoading ? null : _login,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.white,
+                                      foregroundColor: const Color(0xFF6A11CB),
+                                      elevation: 8,
+                                      shadowColor: Colors.black.withOpacity(0.2),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                    ),
+                                    child: _isLoading
+                                        ? const SizedBox(
+                                            width: 24,
+                                            height: 24,
+                                            child: CircularProgressIndicator(
+                                              color: Color(0xFF6A11CB),
+                                              strokeWidth: 2,
+                                            ),
+                                          )
+                                        : const Text(
+                                            'LOGIN',
+                                            style: TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              letterSpacing: 1.5,
+                                            ),
+                                          ),
+                                  ),
                                 ),
                               ],
                             ),
                           ),
                         ),
                         
-                            // Forgot Password Link
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: TextButton(
-                                onPressed: _showForgotPasswordDialog,
-                                child: Text(
-                                  'Forgot Password?',
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.9),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ),
+                        const SizedBox(height: 24),
 
-                            const SizedBox(height: 24),
-                        
-                            // Login button
-                            SizedBox(
-                              width: double.infinity,
-                              height: 56,
-                              child: ElevatedButton(
-                                onPressed: _isLoading ? null : _login,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.white,
-                                  foregroundColor: const Color(0xFF6A11CB),
-                                  elevation: 8,
-                                  shadowColor: Colors.black.withOpacity(0.2),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                ),
-                                child: _isLoading
-                                    ? const SizedBox(
-                                        width: 24,
-                                        height: 24,
-                                        child: CircularProgressIndicator(
-                                          color: Color(0xFF6A11CB),
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : const Text(
-                                        'LOGIN',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          letterSpacing: 1.5,
-                                        ),
-                                      ),
-                              ),
-                            ),
-                            
-                            const SizedBox(height: 24),
-                            
-                            // Sign up link
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                            Text(
-                              "Don't have an account? ",
-                              style: TextStyle(color: Colors.white.withOpacity(0.8)),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (context) => const SignupScreen(),
-                                  ),
-                                );
-                              },
-                              child: const Text(
-                                'Sign Up',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
+                        // Back to Student Login
                         TextButton(
                           onPressed: () {
                             Navigator.of(context).pushReplacement(
                               MaterialPageRoute(
-                                builder: (context) => const FacultyLoginScreen(),
+                                builder: (context) => const LoginScreen(),
                               ),
                             );
                           },
@@ -471,12 +335,19 @@ class _LoginScreenState extends State<LoginScreen> {
                               border: Border.all(color: Colors.white.withOpacity(0.5)),
                               borderRadius: BorderRadius.circular(20),
                             ),
-                            child: Text(
-                              'Faculty Login',
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.9),
-                                fontWeight: FontWeight.w600,
-                              ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.arrow_back, size: 16, color: Colors.white.withOpacity(0.9)),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Back to Student Login',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.9),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),

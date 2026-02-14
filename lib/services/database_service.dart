@@ -127,5 +127,18 @@ class DatabaseService {
     // For now, let's return false so we force checks elsewhere.
     return false; 
   }
+
+  // Stream all timetables (for faculty to see all their lectures)
+  // This uses a collection group query which requires an index in Firestore
+  static Stream<List<Subject>> streamAllTimetables() {
+    return _db
+        .collectionGroup('subjects')
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => Subject.fromFirestore(doc))
+          .toList();
+    });
+  }
 }
 

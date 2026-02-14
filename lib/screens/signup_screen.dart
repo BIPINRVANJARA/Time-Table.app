@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'academic_setup_screen.dart';
+import '../services/auth_service.dart';
+import 'email_verification_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -18,6 +19,7 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  int _passwordStrength = 0;
 
   @override
   void dispose() {
@@ -25,6 +27,12 @@ class _SignupScreenState extends State<SignupScreen> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  void _updatePasswordStrength(String password) {
+    setState(() {
+      _passwordStrength = AuthService.getPasswordStrength(password);
+    });
   }
 
   Future<void> _signup() async {
@@ -39,6 +47,9 @@ class _SignupScreenState extends State<SignupScreen> {
         password: _passwordController.text,
       );
 
+      // Send email verification
+      await userCredential.user!.sendEmailVerification();
+
       // Create user document in Firestore
       await FirebaseFirestore.instance
           .collection('users')
@@ -50,10 +61,10 @@ class _SignupScreenState extends State<SignupScreen> {
       });
 
       if (mounted) {
-        // Navigate to academic setup
+        // Navigate to email verification screen
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (context) => const AcademicSetupScreen(),
+            builder: (context) => const EmailVerificationScreen(),
           ),
         );
       }
@@ -247,6 +258,7 @@ class _SignupScreenState extends State<SignupScreen> {
                               controller: _passwordController,
                               obscureText: _obscurePassword,
                               style: const TextStyle(color: Colors.white),
+                              onChanged: _updatePasswordStrength,
                               decoration: InputDecoration(
                                 labelText: 'Password',
                                 labelStyle: TextStyle(color: Colors.white.withOpacity(0.8)),
@@ -275,12 +287,55 @@ class _SignupScreenState extends State<SignupScreen> {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter a password';
                                 }
-                                if (value.length < 6) {
-                                  return 'Password must be at least 6 characters';
-                                }
-                                return null;
+                                // Use AuthService validation
+                                final error = AuthService.validatePasswordStrength(value);
+                                return error;
                               },
                             ),
+                            
+                            // Password strength indicator
+                            if (_passwordController.text.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: LinearProgressIndicator(
+                                      value: _passwordStrength / 4,
+                                      backgroundColor: Colors.white.withOpacity(0.2),
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        _passwordStrength == 0
+                                            ? Colors.red
+                                            : _passwordStrength == 1
+                                                ? Colors.orange
+                                                : _passwordStrength == 2
+                                                    ? Colors.yellow
+                                                    : _passwordStrength == 3
+                                                        ? Colors.lightGreen
+                                                        : Colors.green,
+                                      ),
+                                      minHeight: 4,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    AuthService.getPasswordStrengthLabel(_passwordStrength),
+                                    style: TextStyle(
+                                      color: Colors.white.withOpacity(0.9),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '8+ chars, uppercase, number, special character',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.6),
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
                             
                             const SizedBox(height: 16),
                             

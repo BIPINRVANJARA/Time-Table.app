@@ -67,7 +67,7 @@ class MyApp extends StatelessWidget {
 
         final user = snapshot.data;
         
-        // If no user is logged in, show Login Screen
+        // If no user is logged in, show Auth Screen (Student/Faculty tabs)
         if (user == null) {
           return const LoginScreen();
         }
