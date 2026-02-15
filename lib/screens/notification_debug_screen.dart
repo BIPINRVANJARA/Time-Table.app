@@ -33,6 +33,28 @@ class _NotificationDebugScreenState extends State<NotificationDebugScreen> {
     }
   }
 
+  Future<void> _seedITData() async {
+    setState(() => _isLoading = true);
+    try {
+      await TimetableSeeder.seedITData();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('IT Data seeding completed successfully!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error seeding IT data: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -63,6 +85,30 @@ class _NotificationDebugScreenState extends State<NotificationDebugScreen> {
               padding: EdgeInsets.symmetric(horizontal: 32),
               child: Text(
                 'This will add subjects for Computer Engineering, Semester 2, Division A based on the JSON provided.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Divider(),
+            const SizedBox(height: 24),
+            _isLoading
+                ? const SizedBox() // progress indicator already shown above
+                : ElevatedButton.icon(
+                    onPressed: _seedITData,
+                    icon: const Icon(Icons.cloud_upload),
+                    label: const Text('Import IT Timetable (Sem 2 Div A)'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.teal,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                  ),
+             const SizedBox(height: 16),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                'This will add subjects for Information Technology, Semester 2, Division A based on the JSON provided.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.grey),
               ),
