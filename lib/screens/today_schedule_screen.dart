@@ -12,6 +12,7 @@ import 'notification_debug_screen.dart';
 import 'admin/admin_dashboard_screen.dart';
 import 'academic_setup_screen.dart';
 import 'login_screen.dart';
+import '../widgets/loading_with_timeout.dart';
 
 class TodayScheduleScreen extends StatefulWidget {
   const TodayScheduleScreen({super.key});
@@ -164,7 +165,7 @@ class _TodayScheduleScreenState extends State<TodayScheduleScreen> {
                       ),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const Center(child: CircularProgressIndicator());
+                          return const _LoadingWithTimeout();
                         }
 
                         if (snapshot.hasError) {
