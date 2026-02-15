@@ -165,7 +165,7 @@ class _TodayScheduleScreenState extends State<TodayScheduleScreen> {
                       ),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const _LoadingWithTimeout();
+                          return const LoadingWithTimeout();
                         }
 
                         if (snapshot.hasError) {

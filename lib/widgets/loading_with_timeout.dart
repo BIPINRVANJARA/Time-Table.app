@@ -2,14 +2,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 
-class _LoadingWithTimeout extends StatefulWidget {
-  const _LoadingWithTimeout();
+class LoadingWithTimeout extends StatefulWidget {
+  const LoadingWithTimeout({super.key});
 
   @override
-  State<_LoadingWithTimeout> createState() => _LoadingWithTimeoutState();
+  State<LoadingWithTimeout> createState() => _LoadingWithTimeoutState();
 }
 
-class _LoadingWithTimeoutState extends State<_LoadingWithTimeout> {
+class _LoadingWithTimeoutState extends State<LoadingWithTimeout> {
   bool _showTimeout = false;
   Timer? _timer;
 
