@@ -55,6 +55,28 @@ class _NotificationDebugScreenState extends State<NotificationDebugScreen> {
     }
   }
 
+  Future<void> _seedITDivBData() async {
+    setState(() => _isLoading = true);
+    try {
+      await TimetableSeeder.seedITDivBData();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('IT Div B Data seeding completed successfully!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error seeding IT Div B data: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -109,6 +131,30 @@ class _NotificationDebugScreenState extends State<NotificationDebugScreen> {
               padding: EdgeInsets.symmetric(horizontal: 32),
               child: Text(
                 'This will add subjects for Information Technology, Semester 2, Division A based on the JSON provided.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Divider(),
+            const SizedBox(height: 24),
+            _isLoading
+                ? const SizedBox() // progress indicator already shown above
+                : ElevatedButton.icon(
+                    onPressed: _seedITDivBData,
+                    icon: const Icon(Icons.cloud_upload),
+                    label: const Text('Import IT Timetable (Sem 2 Div B)'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                  ),
+             const SizedBox(height: 16),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                'This will add subjects for Information Technology, Semester 2, Division B based on the JSON provided.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.grey),
               ),
