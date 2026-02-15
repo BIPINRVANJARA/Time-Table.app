@@ -29,15 +29,23 @@ class NotificationService {
     );
 
     // Request permissions for Android 13+
-    await _requestPermissions();
+    await requestPermissions();
   }
 
   /// Request notification permissions
-  Future<void> _requestPermissions() async {
-    await _notifications
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
+  Future<void> requestPermissions() async {
+    final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
+        _notifications.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+
+    if (androidImplementation != null) {
+      // Request notification permissions (Android 13+)
+      await androidImplementation.requestNotificationsPermission();
+      
+      // Request exact alarm permissions (Android 12+)
+      // This might open system settings if not granted
+      await androidImplementation.requestExactAlarmsPermission();
+    }
   }
 
   /// Handle notification tap

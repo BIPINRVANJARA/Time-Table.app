@@ -114,6 +114,23 @@ class _NotificationDebugScreenState extends State<NotificationDebugScreen> {
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: () async {
+                await NotificationService().requestPermissions();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Requested Notification Permissions')),
+                  );
+                }
+              },
+              icon: const Icon(Icons.notifications_active),
+              label: const Text('Request Permissions'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueGrey,
+                foregroundColor: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 16),
             _isLoading
                 ? const CircularProgressIndicator()
                 : ElevatedButton.icon(
