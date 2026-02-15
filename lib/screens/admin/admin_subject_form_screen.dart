@@ -3,6 +3,7 @@ import '../../models/subject.dart';
 import '../../models/faculty.dart';
 import '../../services/database_service.dart';
 import '../../services/faculty_service.dart';
+import '../../services/college_structure_service.dart';
 
 class AdminSubjectFormScreen extends StatefulWidget {
   final String branch;
@@ -260,7 +261,7 @@ class _AdminSubjectFormScreenState extends State<AdminSubjectFormScreen> {
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8, 
-                      children: ['A1', 'A2', 'A3', 'B1', 'B2', 'B3'].map((batch) {
+                      children: CollegeStructureService.getBatchesForDivision(widget.division).map((batch) {
                         final isSelected = _selectedBatch == batch;
                         return ChoiceChip(
                           label: Text(batch),
