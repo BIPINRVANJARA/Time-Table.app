@@ -16,6 +16,7 @@ class Subject {
   String? batch; // Specific batch (e.g., A1, B1) or null for all
   String? facultyId; // Faculty ID assigned to this lecture
   String? roomNumber; // Room number where lecture is held
+  bool isPersonal; // Personal subject for faculty (not visible to students)
 
 
   Subject({
@@ -34,6 +35,7 @@ class Subject {
     this.batch,
     this.facultyId,
     this.roomNumber,
+    this.isPersonal = false,
   });
 
   // Factory to create from Firestore document
@@ -55,6 +57,7 @@ class Subject {
       batch: data['batch'],
       facultyId: data['facultyId'],
       roomNumber: data['roomNumber'],
+      isPersonal: data['isPersonal'] ?? false,
     );
   }
 
@@ -75,6 +78,7 @@ class Subject {
       'batch': batch,
       'facultyId': facultyId,
       'roomNumber': roomNumber,
+      'isPersonal': isPersonal,
     };
   }
 

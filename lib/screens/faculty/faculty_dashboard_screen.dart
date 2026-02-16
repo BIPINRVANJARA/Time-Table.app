@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/subject.dart';
@@ -6,6 +7,7 @@ import '../../services/notification_service.dart';
 import '../../widgets/date_selector.dart';
 import '../../widgets/subject_card.dart';
 import '../login_screen.dart';
+import 'personal_subject_dialog.dart';
 
 class FacultyDashboardScreen extends StatefulWidget {
   final String facultyId;
@@ -67,6 +69,11 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen> {
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showAddSubjectDialog,
+        backgroundColor: const Color(0xFF7BA5E8),
+        child: const Icon(Icons.add),
+      ),
       body: Column(
         children: [
           // Date selector
@@ -123,9 +130,42 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen> {
                   itemCount: lectures.length,
                   itemBuilder: (context, index) {
                     final lecture = lectures[index];
-                    return SubjectCard(
+                    return Dismissible(
                       key: ValueKey(lecture.id),
-                      subject: lecture,
+                      direction: lecture.isPersonal ? DismissDirection.endToStart : DismissDirection.none,
+                      background: Container(
+                        color: Colors.red,
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: const Icon(Icons.delete, color: Colors.white),
+                      ),
+                      confirmDismiss: (direction) async {
+                        return await showDialog(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Delete Subject?'),
+                            content: const Text('Are you sure you want to delete this personal subject?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(ctx).pop(false),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.of(ctx).pop(true),
+                                child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      onDismissed: (direction) {
+                        _deletePersonalSubject(lecture.id);
+                      },
+                      child: SubjectCard(
+                        key: ValueKey(lecture.id),
+                        subject: lecture,
+                        onTap: lecture.isPersonal ? () => _showEditNote(context) : null,
+                      ),
                     );
                   },
                 );
@@ -137,15 +177,97 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen> {
     );
   }
 
-  /// Stream lectures assigned to this faculty
+  void _showAddSubjectDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => PersonalSubjectDialog(
+        onAdd: (subject) async {
+          await DatabaseService.addPersonalSubject(widget.facultyId, subject);
+        },
+      ),
+    );
+  }
+
+  Future<void> _deletePersonalSubject(String subjectId) async {
+      await DatabaseService.deletePersonalSubject(widget.facultyId, subjectId);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Subject deleted')),
+      );
+  }
+
+  void _showEditNote(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Tap and hold to delete personal subjects')),
+    );
+  }
+
+  /// Stream lectures assigned to this faculty AND personal subjects
   Stream<List<Subject>> _streamFacultyLectures() {
-    // Get all timetables and filter by facultyId
-    // This is a simplified approach - in production, you'd want to optimize this query
-    return DatabaseService.streamAllTimetables()
+    // 1. Stream official lectures
+    final officialStream = DatabaseService.streamAllTimetables()
         .map((subjects) => subjects
             .where((s) => s.facultyId == widget.facultyId)
             .toList());
+
+    // 2. Stream personal subjects
+    final personalStream = DatabaseService.streamPersonalSubjects(widget.facultyId);
+
+    // 3. Merge streams using RxDart-style combination (using StreamZip or generic combine)
+    // Since Dart core doesn't have combineLatest easily without rxdart, we can use a custom combiner
+    // Or just simple StreamGroup if we had the package. 
+    // Let's implement a simple combineLatest2 manually or use async expansion.
+    
+    return StreamBuilderWithCombine(officialStream, personalStream);
   }
+}
+
+// Helper to combine two streams manually since we don't have RxDart
+Stream<List<Subject>> StreamBuilderWithCombine(
+    Stream<List<Subject>> stream1, Stream<List<Subject>> stream2) {
+  // We need to emit a new list whenever either stream emits.
+  // We'll maintain the latest state of both lists.
+  
+  // Create a controller to output the combined stream
+  // Note: This simple implementation might have issues with broadcast/single-subscription if not careful.
+  // But for StreamBuilder it's okay.
+  
+  final controller = StreamController<List<Subject>>();
+  List<Subject> list1 = [];
+  List<Subject> list2 = [];
+  bool hasEmitted1 = false;
+  bool hasEmitted2 = false;
+
+  final sub1 = stream1.listen(
+    (data) {
+      list1 = data;
+      hasEmitted1 = true;
+      controller.add([...list1, ...list2]);
+    },
+    onError: controller.addError,
+    onDone: () {
+      // Don't close unless both are done? 
+      // For Firestore streams, they usually stay open.
+    },
+  );
+
+  final sub2 = stream2.listen(
+    (data) {
+      list2 = data;
+      hasEmitted2 = true;
+      // If stream1 hasn't emitted yet, we still emit stream2
+      controller.add([...list1, ...list2]);
+    },
+    onError: controller.addError,
+    onDone: () {},
+  );
+
+  controller.onCancel = () {
+    sub1.cancel();
+    sub2.cancel();
+  };
+
+  return controller.stream;
+}
 
   Widget _buildEmptyState(int dayOfWeek) {
     final dayName = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][dayOfWeek];

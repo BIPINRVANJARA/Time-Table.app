@@ -140,5 +140,44 @@ class DatabaseService {
           .toList();
     });
   }
+
+  // --- Personal Subjects (Faculty Only) ---
+
+  // Add a personal subject
+  static Future<void> addPersonalSubject(String uid, Subject subject) async {
+    final ref = _db
+        .collection('users')
+        .doc(uid)
+        .collection('personal_subjects')
+        .doc();
+    
+    subject.id = ref.id;
+    subject.isPersonal = true;
+    await ref.set(subject.toMap());
+  }
+
+  // Delete a personal subject
+  static Future<void> deletePersonalSubject(String uid, String subjectId) async {
+    await _db
+        .collection('users')
+        .doc(uid)
+        .collection('personal_subjects')
+        .doc(subjectId)
+        .delete();
+  }
+
+  // Stream personal subjects
+  static Stream<List<Subject>> streamPersonalSubjects(String uid) {
+    return _db
+        .collection('users')
+        .doc(uid)
+        .collection('personal_subjects')
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => Subject.fromFirestore(doc))
+          .toList();
+    });
+  }
 }
 
