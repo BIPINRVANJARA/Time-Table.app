@@ -16,7 +16,7 @@ A beautiful Flutter mobile application for managing your weekly college timetabl
 
 ## 📥 Download
 
-Download the latest APK: [Timecloud v1.0.0](https://github.com/BIPINRVANJARA/Time-Table.app/releases/download/v1.0.0/app-release.apk)
+Download the latest APK: [Timecloud Latest APK](https://github.com/BIPINRVANJARA/Time-Table.app/raw/main/releases/app-latest.apk)
 
 ## 🌐 Web Admin Panel
 
