@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/subject.dart';
 import '../models/user_model.dart';
+import 'faculty_service.dart';
+import '../models/faculty.dart';
 
 
 class DatabaseService {
@@ -22,24 +24,78 @@ class DatabaseService {
 
   // Stream current user profile (Reactive)
   static Stream<UserModel?> streamUserProfile() {
-    final uid = _auth.currentUser?.uid;
-    if (uid == null) return Stream.value(null);
+    final user = _auth.currentUser;
+    
+    if (user == null) {
+      // Check for local faculty session (Special case for out-of-sync auth)
+      return Stream.fromFuture(FacultyService.getLocalSessionId()).asyncExpand((facultyId) {
+        if (facultyId == null) return Stream.value(null);
+        
+        // Return a virtual user profile based on faculty document
+        return _db
+            .collection('faculty')
+            .where('facultyId', isEqualTo: facultyId)
+            .limit(1)
+            .snapshots()
+            .map((snapshot) {
+          if (snapshot.docs.isEmpty) return null;
+          final facultyData = Faculty.fromFirestore(snapshot.docs.first);
+          
+          return UserModel(
+            uid: facultyData.id,
+            email: facultyData.email ?? '',
+            role: facultyData.role,
+            branch: '', // Not applicable for faculty
+            semester: '',
+            division: '',
+            batch: '',
+            facultyId: facultyData.facultyId,
+            createdAt: facultyData.createdAt,
+          );
+        });
+      });
+    }
 
-    return _db.collection('users').doc(uid).snapshots().map((doc) {
+    return _db.collection('users').doc(user.uid).snapshots().map((doc) {
       if (!doc.exists) return null;
-      return UserModel.fromMap(doc.data() as Map<String, dynamic>, uid);
+      return UserModel.fromMap(doc.data() as Map<String, dynamic>, user.uid);
     });
   }
 
   // Get current user profile (One-time)
   static Future<UserModel?> getUserProfile() async {
-    final uid = _auth.currentUser?.uid;
-    if (uid == null) return null;
+    final user = _auth.currentUser;
+    
+    if (user == null) {
+       final facultyId = await FacultyService.getLocalSessionId();
+       if (facultyId == null) return null;
 
-    final doc = await _db.collection('users').doc(uid).get();
+       final query = await _db
+            .collection('faculty')
+            .where('facultyId', isEqualTo: facultyId)
+            .limit(1)
+            .get();
+        
+        if (query.docs.isEmpty) return null;
+        final facultyData = Faculty.fromFirestore(query.docs.first);
+        
+        return UserModel(
+          uid: facultyData.id,
+          email: facultyData.email ?? '',
+          role: facultyData.role,
+          branch: '',
+          semester: '',
+          division: '',
+          batch: '',
+          facultyId: facultyData.facultyId,
+          createdAt: facultyData.createdAt,
+        );
+    }
+
+    final doc = await _db.collection('users').doc(user.uid).get();
     if (!doc.exists) return null;
 
-    return UserModel.fromMap(doc.data() as Map<String, dynamic>, uid);
+    return UserModel.fromMap(doc.data() as Map<String, dynamic>, user.uid);
   }
 
   // --- Timetable Methods (Firestore) ---
@@ -141,13 +197,50 @@ class DatabaseService {
     });
   }
 
+  // Assign a proxy to a subject
+  static Future<void> assignProxy(Subject subject, String proxyFacultyId, String proxyFacultyName, String originalFacultyName) async {
+    // If we have a direct reference, use it (Best Practice)
+    if (subject.reference != null) {
+      await subject.reference!.update({
+        'proxyFacultyId': proxyFacultyId,
+        'isProxy': true,
+        'originalFacultyName': originalFacultyName,
+        'facultyName': '$originalFacultyName (Proxy: $proxyFacultyName)',
+        'facultyId': proxyFacultyId,
+      });
+      return;
+    }
+
+    // Fallback: Find the subject document using collection group query
+    // NOTE: This might fail if subjectId is just an ID string and not a path.
+    // It's safer to rely on reference.
+    final query = _db.collectionGroup('subjects').where(FieldPath.documentId, isEqualTo: subject.id);
+    final snapshot = await query.get();
+    
+    if (snapshot.docs.isEmpty) {
+      throw Exception('Subject not found');
+    }
+    
+    // Update the first matching document (IDs should be unique)
+    final docRef = snapshot.docs.first.reference;
+    
+    await docRef.update({
+      'proxyFacultyId': proxyFacultyId,
+      'isProxy': true,
+      'originalFacultyName': originalFacultyName,
+      // We also update the facultyName to show the proxy faculty
+      'facultyName': '$originalFacultyName (Proxy: $proxyFacultyName)',
+      'facultyId': proxyFacultyId, // Reassign to proxy faculty so they see it in their schedule
+    });
+  }
+
   // --- Personal Subjects (Faculty Only) ---
 
   // Add a personal subject
-  static Future<void> addPersonalSubject(String uid, Subject subject) async {
+  static Future<void> addPersonalSubject(String facultyId, Subject subject) async {
     final ref = _db
-        .collection('users')
-        .doc(uid)
+        .collection('faculty')
+        .doc(facultyId)
         .collection('personal_subjects')
         .doc();
     
@@ -157,26 +250,59 @@ class DatabaseService {
   }
 
   // Delete a personal subject
-  static Future<void> deletePersonalSubject(String uid, String subjectId) async {
+  static Future<void> deletePersonalSubject(String facultyId, String subjectId) async {
     await _db
-        .collection('users')
-        .doc(uid)
+        .collection('faculty')
+        .doc(facultyId)
         .collection('personal_subjects')
         .doc(subjectId)
         .delete();
   }
 
   // Stream personal subjects
-  static Stream<List<Subject>> streamPersonalSubjects(String uid) {
+  static Stream<List<Subject>> streamPersonalSubjects(String facultyId) {
     return _db
-        .collection('users')
-        .doc(uid)
+        .collection('faculty')
+        .doc(facultyId)
         .collection('personal_subjects')
         .snapshots()
         .map((snapshot) {
       return snapshot.docs
           .map((doc) => Subject.fromFirestore(doc))
           .toList();
+    });
+  }
+
+  // --- Warning Methods ---
+
+  // Send a warning to a student
+  static Future<void> sendWarning(String studentUid, String facultyName, String message) async {
+    await _db
+        .collection('users')
+        .doc(studentUid)
+        .collection('warnings')
+        .add({
+      'facultyName': facultyName,
+      'message': message,
+      'timestamp': FieldValue.serverTimestamp(),
+      'isRead': false,
+    });
+  }
+
+  // Stream warnings for a student
+  static Stream<List<Map<String, dynamic>>> streamWarnings(String studentUid) {
+    return _db
+        .collection('users')
+        .doc(studentUid)
+        .collection('warnings')
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return data;
+      }).toList();
     });
   }
 }

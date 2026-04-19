@@ -4,7 +4,12 @@ import '../../models/faculty.dart';
 import 'admin_faculty_form_screen.dart';
 
 class AdminFacultyListScreen extends StatelessWidget {
-  const AdminFacultyListScreen({super.key});
+  final String? restrictedDepartment;
+
+  const AdminFacultyListScreen({
+    super.key,
+    this.restrictedDepartment,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +43,14 @@ class AdminFacultyListScreen extends StatelessWidget {
             return Center(child: Text('Error: ${snapshot.error}'));
           }
 
-          final facultyList = snapshot.data ?? [];
+          var facultyList = snapshot.data ?? [];
+          
+          // Filter if restricted
+          if (restrictedDepartment != null) {
+            facultyList = facultyList
+                .where((f) => f.department == restrictedDepartment)
+                .toList();
+          }
 
           if (facultyList.isEmpty) {
             return Center(

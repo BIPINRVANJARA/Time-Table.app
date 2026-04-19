@@ -28,8 +28,39 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  // Account Lockout Variables
+  int _failedAttempts = 0;
+  DateTime? _lockoutEndTime;
+  static const int _maxAttempts = 5;
+  static const Duration _lockoutDuration = Duration(minutes: 5);
+
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // Check for lockout
+    if (_lockoutEndTime != null) {
+      if (DateTime.now().isBefore(_lockoutEndTime!)) {
+        final remaining = _lockoutEndTime!.difference(DateTime.now());
+        final minutes = remaining.inMinutes;
+        final seconds = remaining.inSeconds % 60;
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Account temporarily locked due to too many failed attempts. Try again in ${minutes}m ${seconds}s.',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      } else {
+        // Lockout expired, reset
+        setState(() {
+          _lockoutEndTime = null;
+          _failedAttempts = 0;
+        });
+      }
+    }
 
     setState(() => _isLoading = true);
 
@@ -38,6 +69,12 @@ class _LoginScreenState extends State<LoginScreen> {
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
+      
+      // Recent successful login, reset counters
+      setState(() {
+        _failedAttempts = 0;
+        _lockoutEndTime = null;
+      });
       
       // Reload user to get latest email verification status
       await AuthService.reloadUser();
@@ -62,6 +99,11 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } on FirebaseAuthException catch (e) {
+      // Increment failed attempts
+      setState(() {
+        _failedAttempts++;
+      });
+
       String message = 'Login failed';
       if (e.code == 'user-not-found') {
         message = 'No account found with this email';
@@ -69,6 +111,16 @@ class _LoginScreenState extends State<LoginScreen> {
         message = 'Incorrect password';
       } else if (e.code == 'invalid-email') {
         message = 'Invalid email address';
+      }
+      
+      // Check if we reached max attempts
+      if (_failedAttempts >= _maxAttempts) {
+        setState(() {
+          _lockoutEndTime = DateTime.now().add(_lockoutDuration);
+        });
+        message = 'Too many failed attempts. Account locked for 5 minutes.';
+      } else {
+        message += ' (${_maxAttempts - _failedAttempts} attempts remaining)';
       }
       
       if (mounted) {

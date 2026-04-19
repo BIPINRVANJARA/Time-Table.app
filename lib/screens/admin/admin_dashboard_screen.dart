@@ -1,12 +1,20 @@
 import 'package:flutter/material.dart';
 import '../../services/college_structure_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/faculty_service.dart';
 import 'admin_timetable_editor.dart';
 import '../today_schedule_screen.dart';
 import 'admin_faculty_list_screen.dart';
+import 'admin_proxy_management_screen.dart';
+import 'admin_student_management_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
-  const AdminDashboardScreen({super.key});
+  final String? restrictedDepartment;
+
+  const AdminDashboardScreen({
+    super.key,
+    this.restrictedDepartment,
+  });
 
   @override
   State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
@@ -21,13 +29,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   @override
   void initState() {
     super.initState();
+    // If restricted, set branch immediately
+    if (widget.restrictedDepartment != null) {
+      _selectedBranch = widget.restrictedDepartment;
+    }
     _checkAdminAccess();
   }
 
   Future<void> _checkAdminAccess() async {
     final isAdmin = await AuthService.isAdmin();
+    // Also check if it's a faculty admin
+    final isFacultyAdmin = await FacultyService.isCurrentFacultyAdmin();
     
-    if (!isAdmin && mounted) {
+    if (!(isAdmin || isFacultyAdmin) && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Admin access required'),
@@ -87,64 +101,79 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildManageFacultySection(),
-                      const SizedBox(height: 32),
-                      const Text(
-                        'Manage Timetables',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF4A4A4A),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Select a combination to create or modify a schedule.',
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                      const SizedBox(height: 32),
-                      _buildSectionTitle('Branch'),
-                      _buildDropdown(
-                        hint: 'Select Branch',
-                        value: _selectedBranch,
-                        items: CollegeStructureService.branches,
-                        onChanged: (val) => setState(() => _selectedBranch = val),
-                      ),
                       const SizedBox(height: 24),
-                      _buildSectionTitle('Semester'),
-                      _buildDropdown(
-                        hint: 'Select Semester',
-                        value: _selectedSemester,
-                        items: CollegeStructureService.semesters,
-                        onChanged: (val) => setState(() => _selectedSemester = val),
-                      ),
-                      const SizedBox(height: 24),
-                      _buildSectionTitle('Division'),
-                      _buildDropdown(
-                        hint: 'Select Division',
-                        value: _selectedDivision,
-                        items: CollegeStructureService.divisions,
-                        onChanged: (val) => setState(() => _selectedDivision = val),
-                      ),
-                      const SizedBox(height: 48),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: ElevatedButton.icon(
-                          onPressed: _navigateToEditor,
-                          icon: const Icon(Icons.edit_calendar_rounded),
-                          label: const Text(
-                            'Manage Timetable',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      _buildManageStudentsSection(),
+                      const SizedBox(height: 32),
+                      // Only show Timetable Management for Super Admins (not restricted)
+                      if (widget.restrictedDepartment == null) ...[
+                        const Text(
+                          'Manage Timetables',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF4A4A4A),
                           ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFF9066),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(28),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Select a combination to create or modify a schedule.',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                        const SizedBox(height: 32),
+                        _buildSectionTitle('Branch'),
+                        _buildDropdown(
+                          hint: 'Select Branch',
+                          value: _selectedBranch,
+                          items: CollegeStructureService.branches,
+                          onChanged: (val) => setState(() => _selectedBranch = val),
+                        ),
+                        const SizedBox(height: 24),
+                        _buildSectionTitle('Semester'),
+                        _buildDropdown(
+                          hint: 'Select Semester',
+                          value: _selectedSemester,
+                          items: CollegeStructureService.semesters,
+                          onChanged: (val) => setState(() => _selectedSemester = val),
+                        ),
+                        const SizedBox(height: 24),
+                        _buildSectionTitle('Division'),
+                        _buildDropdown(
+                          hint: 'Select Division',
+                          value: _selectedDivision,
+                          items: CollegeStructureService.divisions,
+                          onChanged: (val) => setState(() => _selectedDivision = val),
+                        ),
+                        const SizedBox(height: 48),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: ElevatedButton.icon(
+                            onPressed: _navigateToEditor,
+                            icon: const Icon(Icons.edit_calendar_rounded),
+                            label: const Text(
+                              'Manage Timetable',
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFF9066),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(28),
+                              ),
                             ),
                           ),
                         ),
-                      ),
+                      ] else ...[
+                        const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child: Text(
+                              'Timetable editing is restricted to Super Admins.',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -171,7 +200,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     required String hint,
     required String? value,
     required List<String> items,
-    required Function(String?) onChanged,
+    required void Function(String?)? onChanged,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -242,7 +271,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) => const AdminFacultyListScreen(),
+                    builder: (context) => AdminFacultyListScreen(
+                      restrictedDepartment: widget.restrictedDepartment,
+                    ),
                   ),
                 );
               },
@@ -256,6 +287,99 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 elevation: 0,
               ),
               child: const Text('Manage Faculty'),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                 Navigator.of(context).push(
+                  MaterialPageRoute(
+                    // Pass restrictedDepartment here
+                    builder: (context) => AdminProxyManagementScreen(
+                      restrictedDepartment: widget.restrictedDepartment,
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.swap_horiz_rounded),
+              label: const Text('Manage Proxies'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF7BA5E8),
+                side: const BorderSide(color: Color(0xFF7BA5E8)),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildManageStudentsSection() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.school_rounded, color: Color(0xFFFF9066), size: 28),
+              SizedBox(width: 12),
+              Text(
+                'Student Management',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF4A4A4A),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Add, remove, or promote students across semesters.',
+            style: TextStyle(color: Colors.grey),
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => AdminStudentManagementScreen(
+                      restrictedDepartment: widget.restrictedDepartment,
+                    ),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFF9066),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
+              child: const Text('Manage Students'),
             ),
           ),
         ],

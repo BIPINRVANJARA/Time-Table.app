@@ -54,18 +54,22 @@ class _FacultyLoginScreenState extends State<FacultyLoginScreen> {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (context) => FacultyDashboardScreen(
-              facultyId: faculty.facultyId,
+              facultyId: faculty!.facultyId,
               facultyName: faculty.facultyName,
+              role: faculty.role,
+              department: faculty.department,
             ),
           ),
         );
       }
     } catch (e) {
       if (mounted) {
+        // Show specific error message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e'),
+            content: Text(e.toString().replaceAll('Exception: ', '')),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
           ),
         );
       }

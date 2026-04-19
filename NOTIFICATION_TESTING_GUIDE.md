@@ -167,7 +167,7 @@ Notifications are rescheduled:
 
 ## 🎯 Testing Checklist
 
-- [ ] Notifications initialize on app start (check console)
+- [ ] Notifications initialize on app start (check console);
 - [ ] Reminders can be enabled/disabled per subject
 - [ ] Notifications appear at correct time (X minutes before class)
 - [ ] Only enabled subjects trigger notifications

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/college_structure_service.dart';
 import '../services/database_service.dart';
 import '../models/user_model.dart';
@@ -19,7 +20,9 @@ class _AcademicSetupScreenState extends State<AcademicSetupScreen> {
   String? _selectedSemester;
   String? _selectedDivision;
   String? _selectedBatch;
+  final TextEditingController _enrollmentController = TextEditingController();
   bool _isLoading = false;
+  String _userRole = 'student';
 
   @override
   void initState() {
@@ -29,16 +32,39 @@ class _AcademicSetupScreenState extends State<AcademicSetupScreen> {
       _selectedSemester = widget.userModel!.semester;
       _selectedDivision = widget.userModel!.division;
       _selectedBatch = widget.userModel!.batch;
+      _enrollmentController.text = widget.userModel!.enrollmentNumber ?? '';
+      _userRole = widget.userModel!.role;
+    } else {
+      _loadUserRole();
     }
+  }
+
+  Future<void> _loadUserRole() async {
+    final profile = await DatabaseService.getUserProfile();
+    if (profile != null && mounted) {
+      setState(() {
+        _userRole = profile.role;
+        _enrollmentController.text = profile.enrollmentNumber ?? '';
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _enrollmentController.dispose();
+    super.dispose();
   }
 
   Future<void> _saveProfile() async {
     if (_selectedBranch == null ||
         _selectedSemester == null ||
         _selectedDivision == null ||
-        _selectedBatch == null) {
+        _selectedBatch == null ||
+        (_userRole == 'student' && _enrollmentController.text.trim().isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select all fields')),
+        SnackBar(content: Text(_userRole == 'student' 
+            ? 'Please fill all fields including Enrollment Number' 
+            : 'Please select all fields')),
       );
       return;
     }
@@ -53,6 +79,38 @@ class _AcademicSetupScreenState extends State<AcademicSetupScreen> {
       final existingProfile = await DatabaseService.getUserProfile();
       final currentRole = existingProfile?.role ?? 'student';
 
+      if (_userRole == 'student') {
+        final enrollmentNo = _enrollmentController.text.trim();
+        
+        // 1. Check if enrollment number exists in the student list for this group
+        // Normalize semester (e.g., 'Semester 4' -> '4') to match how students are stored
+        final semNum = CollegeStructureService.getSemesterNumber(_selectedSemester!);
+        final groupId = '${semNum}_${_selectedDivision}_${_selectedBatch}'.replaceAll(' ', '');
+        
+        final studentCheck = await FirebaseFirestore.instance
+            .collection('students')
+            .doc(groupId)
+            .collection('entries')
+            .where('enrollmentNumber', isEqualTo: enrollmentNo)
+            .limit(1)
+            .get();
+            
+        if (studentCheck.docs.isEmpty) {
+          throw Exception('Enrollment number $enrollmentNo not found in the official list for the selected division/batch. Please contact admin.');
+        }
+
+        // 2. Check if this enrollment number is already linked to ANOTHER user
+        final duplicateCheck = await FirebaseFirestore.instance
+            .collection('users')
+            .where('enrollmentNumber', isEqualTo: enrollmentNo)
+            .get();
+            
+        final otherUsers = duplicateCheck.docs.where((doc) => doc.id != user.uid);
+        if (otherUsers.isNotEmpty) {
+          throw Exception('This enrollment number is already linked to another account.');
+        }
+      }
+
       final userModel = UserModel(
         uid: user.uid,
         email: user.email ?? '',
@@ -61,6 +119,7 @@ class _AcademicSetupScreenState extends State<AcademicSetupScreen> {
         semester: _selectedSemester!,
         division: _selectedDivision!,
         batch: _selectedBatch!,
+        enrollmentNumber: _userRole == 'student' ? _enrollmentController.text.trim() : null,
         createdAt: existingProfile?.createdAt ?? DateTime.now(),
       );
 
@@ -141,6 +200,15 @@ class _AcademicSetupScreenState extends State<AcademicSetupScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        if (_userRole == 'student') ...[
+                          _buildSectionTitle('Enrollment Number'),
+                          _buildTextField(
+                            controller: _enrollmentController,
+                            hint: 'Enter your enrollment number',
+                            icon: Icons.badge_outlined,
+                          ),
+                          const SizedBox(height: 24),
+                        ],
                         _buildSectionTitle('Branch'),
                         _buildDropdown(
                           hint: 'Select Branch',
@@ -260,6 +328,30 @@ class _AcademicSetupScreenState extends State<AcademicSetupScreen> {
             );
           }).toList(),
           onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: TextField(
+        controller: controller,
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(color: Colors.grey[500]),
+          prefixIcon: Icon(icon, color: Colors.grey[600], size: 20),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
       ),
     );

@@ -17,7 +17,10 @@ class Subject {
   String? facultyId; // Faculty ID assigned to this lecture
   String? roomNumber; // Room number where lecture is held
   bool isPersonal; // Personal subject for faculty (not visible to students)
-
+  String? proxyFacultyId; // ID of the faculty taking this as proxy
+  bool isProxy; // Is this a proxy lecture?
+  String? originalFacultyName; // Name of original faculty if this is a proxy
+  DocumentReference? reference; // Reference to the Firestore document
 
   Subject({
     required this.id,
@@ -36,13 +39,46 @@ class Subject {
     this.facultyId,
     this.roomNumber,
     this.isPersonal = false,
+    this.proxyFacultyId,
+    this.isProxy = false,
+    this.originalFacultyName,
+    this.reference,
+    this.branch,
+    this.semester,
+    this.division,
   });
+
+  // Derived fields from path
+  String? branch;
+  String? semester;
+  String? division;
 
   // Factory to create from Firestore document
   factory Subject.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    
+    // Attempt to extract context from path: timetables/{branch_sem_div}/subjects/{id}
+    String? derivedBranch;
+    String? derivedSemester;
+    String? derivedDivision;
+    
+    try {
+      if (doc.reference.parent.parent != null) {
+        final parentId = doc.reference.parent.parent!.id;
+        final parts = parentId.split('_');
+        if (parts.length >= 3) {
+          derivedBranch = parts[0];
+          derivedSemester = parts[1];
+          derivedDivision = parts[2];
+        }
+      }
+    } catch (e) {
+      // Ignore parsing errors
+    }
+
     return Subject(
       id: doc.id,
+      reference: doc.reference,
       subjectName: data['subjectName'] ?? '',
       facultyName: data['facultyName'] ?? '',
       type: data['type'] ?? 'lecture',
@@ -58,6 +94,12 @@ class Subject {
       facultyId: data['facultyId'],
       roomNumber: data['roomNumber'],
       isPersonal: data['isPersonal'] ?? false,
+      proxyFacultyId: data['proxyFacultyId'],
+      isProxy: data['isProxy'] ?? false,
+      originalFacultyName: data['originalFacultyName'],
+      branch: derivedBranch,
+      semester: derivedSemester,
+      division: derivedDivision,
     );
   }
 
@@ -79,6 +121,9 @@ class Subject {
       'facultyId': facultyId,
       'roomNumber': roomNumber,
       'isPersonal': isPersonal,
+      'proxyFacultyId': proxyFacultyId,
+      'isProxy': isProxy,
+      'originalFacultyName': originalFacultyName,
     };
   }
 

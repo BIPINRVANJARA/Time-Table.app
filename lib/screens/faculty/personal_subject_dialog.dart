@@ -187,7 +187,7 @@ class _PersonalSubjectDialogState extends State<PersonalSubjectDialog> {
         ),
         ElevatedButton(
           onPressed: _submit,
-          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+          style: ElevatedButton.styleFrom(backgroundColor: AppColors.blue),
           child: const Text('Add'),
         ),
       ],

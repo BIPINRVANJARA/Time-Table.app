@@ -8,6 +8,8 @@ class Faculty {
   String? department;
   String? email;
   DateTime createdAt;
+  String role;
+  String? uid;
 
   Faculty({
     required this.id,
@@ -17,6 +19,8 @@ class Faculty {
     this.department,
     this.email,
     required this.createdAt,
+    this.role = 'faculty', // 'faculty' or 'faculty_admin'
+    this.uid, // Firebase Auth UID
   });
 
   // Factory to create from Firestore document
@@ -30,6 +34,8 @@ class Faculty {
       department: data['department'],
       email: data['email'],
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      role: data['role'] ?? 'faculty',
+      uid: data['uid'],
     );
   }
 
@@ -42,6 +48,8 @@ class Faculty {
       'department': department,
       'email': email,
       'createdAt': Timestamp.fromDate(createdAt),
+      'role': role,
+      'uid': uid,
     };
   }
 
@@ -60,6 +68,7 @@ class Faculty {
       department: department,
       email: email,
       createdAt: DateTime.now(),
+      role: 'faculty',
     );
   }
 }

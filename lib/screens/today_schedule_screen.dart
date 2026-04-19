@@ -12,6 +12,8 @@ import 'notification_debug_screen.dart';
 import 'admin/admin_dashboard_screen.dart';
 import 'academic_setup_screen.dart';
 import 'login_screen.dart';
+import 'student/student_profile_screen.dart';
+import '../services/faculty_service.dart';
 import '../widgets/loading_with_timeout.dart';
 
 class TodayScheduleScreen extends StatefulWidget {
@@ -105,17 +107,38 @@ class _TodayScheduleScreenState extends State<TodayScheduleScreen> {
                 icon: const Icon(Icons.person, color: Colors.black54),
                 tooltip: 'Profile',
                 onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => AcademicSetupScreen(userModel: userProfile),
-                    ),
-                  );
+                  if (userProfile.role.toLowerCase() == 'student') {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => StudentProfileScreen(userModel: userProfile),
+                      ),
+                    );
+                  } else {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => AcademicSetupScreen(userModel: userProfile),
+                      ),
+                    );
+                  }
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.notifications_active, color: Color(0xFF7BA5E8)),
+                tooltip: 'Test Notification',
+                onPressed: () async {
+                  await NotificationService().showTestNotification();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Sent test notification! Check status bar.')),
+                    );
+                  }
                 },
               ),
               IconButton(
                 icon: const Icon(Icons.logout, color: Colors.black54),
                 tooltip: 'Logout',
                 onPressed: () async {
+                  await FacultyService.clearLocalSession();
                   await FirebaseAuth.instance.signOut();
                   if (context.mounted) {
                     Navigator.of(context).pushAndRemoveUntil(
@@ -123,17 +146,6 @@ class _TodayScheduleScreenState extends State<TodayScheduleScreen> {
                       (route) => false,
                     );
                   }
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.bug_report),
-                tooltip: 'Debug Notifications',
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const NotificationDebugScreen(),
-                    ),
-                  );
                 },
               ),
             ],

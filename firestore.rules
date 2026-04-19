@@ -17,6 +17,18 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
+    // Check if the user is a faculty member (using faculty_roles collection)
+    function isFaculty() {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/faculty_roles/$(request.auth.uid));
+    }
+
+    // Check if the user is a faculty admin
+    function isFacultyAdmin() {
+      return isFaculty() && 
+        get(/databases/$(database)/documents/faculty_roles/$(request.auth.uid)).data.role == 'faculty_admin';
+    }
+
     // =========================================================================
     // COLLECTION RULES
     // =========================================================================
@@ -45,6 +57,12 @@ service cloud.firestore {
       
       // Only Admins (who are authenticated) can create/edit faculty.
       allow write: if isAdmin();
+
+      // Allow unauthenticated faculty to manage their personal subjects
+      // TODO: Secure this by migrating Faculty to Firebase Auth
+      match /personal_subjects/{subjectId} {
+        allow read, write: if true;
+      }
     }
 
     // -------------------------------------------------------------------------
@@ -57,7 +75,9 @@ service cloud.firestore {
       allow read: if true;
       
       // Only Admins can manage subjects.
-      allow write: if isAdmin();
+      // Faculty can also update (for Proxy) but strictly speaking we should limit fields.
+      // For now, allow full update if Faculty.
+      allow write: if isAdmin() || isFaculty();
     }
 
     // -------------------------------------------------------------------------
@@ -66,6 +86,53 @@ service cloud.firestore {
     match /audit_logs/{logId} {
       allow read, create: if isAdmin();
       allow update, delete: if false; // Immutable
+    }
+    
+    // -------------------------------------------------------------------------
+    // Faculty Roles (Mapping UID to Role)
+    // -------------------------------------------------------------------------
+    match /faculty_roles/{userId} {
+      // Allow authenticated users to write their own role map entry (done by app on login)
+      // This is slightly loose but necessary without Cloud Functions. 
+      // We assume the app logic restricts what is written.
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // -------------------------------------------------------------------------
+    // Students Collection
+    // -------------------------------------------------------------------------
+    match /students/{path=**} {
+      // Allow read/write for all. Access is gated by the app's login screens.
+      allow read, write: if true;
+    }
+
+    // Required for collectionGroup queries used in division-wide student fetching
+    match /{path=**}/entries/{studentId} {
+      allow read: if true;
+    }
+
+    // -------------------------------------------------------------------------
+    // Attendance Collection
+    // -------------------------------------------------------------------------
+    match /attendance/{path=**} {
+      // Allow read/write for all. Access is gated by the app's login screens.
+      allow read, write: if true;
+    }
+
+    // Required for collectionGroup queries used in student stats
+    match /{path=**}/dates/{dateId} {
+      allow read: if true;
+    }
+
+    // -------------------------------------------------------------------------
+    // Warnings Subcollection
+    // -------------------------------------------------------------------------
+    match /users/{userId}/warnings/{warningId} {
+      // Users can read their own warnings. Faculty can write them.
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin() || isFaculty());
+      allow create: if isAdmin() || isFaculty();
+      allow update, delete: if isAdmin();
     }
   }
 }

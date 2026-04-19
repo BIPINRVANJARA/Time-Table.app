@@ -6,6 +6,7 @@ class UserModel {
   final String semester;
   final String division;
   final String batch;
+  final String? enrollmentNumber; // For students
   final String? facultyId; // Faculty ID if role is 'faculty'
   final DateTime createdAt;
 
@@ -17,6 +18,7 @@ class UserModel {
     required this.semester,
     required this.division,
     required this.batch,
+    this.enrollmentNumber,
     this.facultyId,
     required this.createdAt,
   });
@@ -31,6 +33,7 @@ class UserModel {
       semester: data['semester'] ?? '',
       division: data['division'] ?? '',
       batch: data['batch'] ?? '',
+      enrollmentNumber: data['enrollmentNumber'],
       facultyId: data['facultyId'],
       createdAt: data['createdAt'] != null 
           ? (data['createdAt'] as dynamic).toDate() 
@@ -47,6 +50,7 @@ class UserModel {
       'semester': semester,
       'division': division,
       'batch': batch,
+      'enrollmentNumber': enrollmentNumber,
       'facultyId': facultyId,
       // createdAt is usually set by serverTimestamp on creation, so we might skip it here on updates
     };
