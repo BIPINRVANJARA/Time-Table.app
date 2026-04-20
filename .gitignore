@@ -57,3 +57,5 @@ GoogleService-Info.plist
 .firebase/
 firebase-debug.log
 firestore-debug.log
+
+landing-page-temp/
