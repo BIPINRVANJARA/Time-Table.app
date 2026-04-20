@@ -23,6 +23,7 @@ class _AcademicSetupScreenState extends State<AcademicSetupScreen> {
   final TextEditingController _enrollmentController = TextEditingController();
   bool _isLoading = false;
   String _userRole = 'student';
+  bool _isEnrollmentLocked = false;
 
   @override
   void initState() {
@@ -34,6 +35,9 @@ class _AcademicSetupScreenState extends State<AcademicSetupScreen> {
       _selectedBatch = widget.userModel!.batch;
       _enrollmentController.text = widget.userModel!.enrollmentNumber ?? '';
       _userRole = widget.userModel!.role;
+      // Lock enrollment if already set (prevent changing to another student's number)
+      _isEnrollmentLocked = widget.userModel!.enrollmentNumber != null && 
+          widget.userModel!.enrollmentNumber!.isNotEmpty;
     } else {
       _loadUserRole();
     }
@@ -205,8 +209,17 @@ class _AcademicSetupScreenState extends State<AcademicSetupScreen> {
                           _buildTextField(
                             controller: _enrollmentController,
                             hint: 'Enter your enrollment number',
-                            icon: Icons.badge_outlined,
+                            icon: _isEnrollmentLocked ? Icons.lock_outline : Icons.badge_outlined,
+                            readOnly: _isEnrollmentLocked,
                           ),
+                          if (_isEnrollmentLocked)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6, left: 4),
+                              child: Text(
+                                'Enrollment number cannot be changed after registration',
+                                style: TextStyle(color: Colors.grey[500], fontSize: 12, fontStyle: FontStyle.italic),
+                              ),
+                            ),
                           const SizedBox(height: 24),
                         ],
                         _buildSectionTitle('Branch'),
@@ -337,19 +350,24 @@ class _AcademicSetupScreenState extends State<AcademicSetupScreen> {
     required TextEditingController controller,
     required String hint,
     required IconData icon,
+    bool readOnly = false,
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: readOnly ? Colors.grey[200] : Colors.grey[100],
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(color: readOnly ? Colors.grey[400]! : Colors.grey[300]!),
       ),
       child: TextField(
         controller: controller,
+        readOnly: readOnly,
+        style: TextStyle(
+          color: readOnly ? Colors.grey[600] : Colors.black87,
+        ),
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: TextStyle(color: Colors.grey[500]),
-          prefixIcon: Icon(icon, color: Colors.grey[600], size: 20),
+          prefixIcon: Icon(icon, color: readOnly ? Colors.grey[500] : Colors.grey[600], size: 20),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),

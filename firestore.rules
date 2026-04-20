@@ -38,8 +38,9 @@ service cloud.firestore {
     // Profiles for Students and Admins (Authenticated Users)
     // -------------------------------------------------------------------------
     match /users/{userId} {
-      // Users can read/update their own profile. Admins can manage all.
-      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      // Any authenticated user can read (needed for enrollment duplicate checks).
+      // Users can create/update their own profile. Admins can manage all.
+      allow read: if isAuthenticated();
       allow create: if isAuthenticated() && request.auth.uid == userId;
       allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
       allow delete: if isAdmin();
